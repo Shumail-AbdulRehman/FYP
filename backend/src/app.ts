@@ -18,20 +18,15 @@ app.use(cookieParser());
 // Routes import
 
 import managerRouter from "./routes/manager.route.js";
-
+import staffRouter from "./routes/staff.route.js"
 
 // Routes 
 
 app.use("/api/managers", managerRouter);
+app.use("/api/staff", staffRouter)
 
 
-
-app.listen(process.env.PORT, () => {
-    console.log(`Server is listening at port ${process.env.PORT}`);
-});
-
-
-// global err catch 
+//global catch
 
 app.use((err: Errback, req: Request, res: Response, next: NextFunction) => {
     console.error(err);
@@ -40,5 +35,11 @@ app.use((err: Errback, req: Request, res: Response, next: NextFunction) => {
         message: "Something went wrong",
     });
 });
+
+
+app.listen(process.env.PORT, () => {
+    console.log(`Server is listening at port ${process.env.PORT}`);
+});
+
 
 export default app;

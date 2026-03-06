@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { managerSignupSchema, managerLoginSchema } from "../validations/manager.validation.js";
+import { managerSignupSchema, managerLoginSchema, createStaffSchema, createLocationSchema } from "../validations/manager.validation.js";
 import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -73,7 +73,6 @@ export const signupManager = async (req: Request, res: Response) => {
         );
 };
 
-
 export const loginManager = async (req: Request, res: Response) => {
     const result = managerLoginSchema.safeParse(req.body);
 
@@ -126,3 +125,100 @@ export const loginManager = async (req: Request, res: Response) => {
             }, "Login successful")
         );
 };
+
+export const createStaff = async (req: Request, res: Response) => {
+    const result = createStaffSchema.safeParse(req.body);
+
+    if (!result.success) {
+        const errors = result.error.issues.map((e: any) => ({
+            field: e.path.join("."),
+            message: e.message,
+        }));
+        throw new ApiError(400, "Validation failed", errors);
+    }
+
+    const { name, email, password, locationId } = result.data;
+    const manager = (req as any).user;
+
+
+    const existingStaff = await prisma.staff.findUnique({
+        where: { email },
+    });
+
+    if (existingStaff) {
+        throw new ApiError(409, "Staff with this email already exists");
+    }
+
+    
+    const location = await prisma.location.findUnique({
+        where: { id: locationId },
+    });
+
+    if (!location || location.companyId !== manager.companyId) {
+        throw new ApiError(404, "Location not found in your company");
+    }
+
+    const staff = await prisma.staff.create({
+        data: {
+            name,
+            email,
+            password,
+            companyId: manager.companyId,
+            locationId,
+        },
+    });
+
+    res.status(201).json(
+        new ApiResponse(201, {
+            id: staff.id,
+            name: staff.name,
+            email: staff.email,
+            role: staff.role,
+            companyId: staff.companyId,
+            locationId: staff.locationId,
+        }, "Staff created successfully")
+    );
+};
+
+export const createLocation = async (req: Request, res: Response) => {
+    
+    const result = createLocationSchema.safeParse(req.body);
+
+    if (!result.success) {
+        const errors = result.error.issues.map((e: any) => ({
+            field: e.path.join("."),
+            message: e.message,
+        }));
+        throw new ApiError(400, "Validation failed", errors);
+    }
+
+    
+    const { name, address } = result.data;
+
+
+    const companyId=(req as any).user.companyId
+    
+    const company = await prisma.company.findUnique({
+        where: { id: companyId },
+    });
+
+    if (!company) {
+        throw new ApiError(404, "Company not found");
+    }
+
+    
+    const location = await prisma.location.create({
+        data: {
+            name,
+            address,
+            companyId,
+        },
+    });
+
+    
+    res.status(201).json(
+        new ApiResponse(201, location, "Location created successfully")
+    );
+};
+
+
