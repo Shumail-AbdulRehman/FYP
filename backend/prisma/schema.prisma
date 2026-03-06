@@ -1,6 +1,91 @@
 generator client {
   provider = "prisma-client-js"
 }
+
 datasource db {
   provider = "postgresql"
+}
+
+model Company {
+  id        Int        @id @default(autoincrement())
+  name      String
+  managers  Manager[]
+  staff     Staff[]
+  locations Location[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Manager {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  password     String
+  role         Role     @default(MANAGER)
+  refreshToken String?
+  company      Company  @relation(fields: [companyId], references: [id])
+  companyId    Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Staff {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  password     String
+  role         Role     @default(STAFF)
+  refreshToken String?
+  company      Company  @relation(fields: [companyId], references: [id])
+  companyId    Int
+  location     Location @relation(fields: [locationId], references: [id])
+  locationId   Int
+  tasks        Task[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Location {
+  id        Int      @id @default(autoincrement())
+  name      String
+  address   String?
+  company   Company  @relation(fields: [companyId], references: [id])
+  companyId Int
+  staff     Staff[]
+  tasks     Task[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Task {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  status      TaskStatus @default(PENDING)
+  staff       Staff      @relation(fields: [staffId], references: [id])
+  staffId     Int
+  location    Location   @relation(fields: [locationId], references: [id])
+  locationId  Int
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  shiftStart  DateTime
+  shiftEnd    DateTime 
+  recurringType RecurringType?
+}
+
+enum RecurringType {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum Role {
+  MANAGER
+  STAFF
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
 }
