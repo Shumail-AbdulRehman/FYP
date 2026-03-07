@@ -3,12 +3,16 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { Response, Request, NextFunction, Errback } from "express";
+import { ApiError } from "./utils/ApiError.js";
+
 
 dotenv.config();
-
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+}));
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -28,12 +32,16 @@ app.use("/api/staff", staffRouter)
 
 //global catch
 
-app.use((err: Errback, req: Request, res: Response, next: NextFunction) => {
+app.use((err:Errback, req:Request, res:Response, next:NextFunction) => {
+    if (err instanceof ApiError) {
+        return res.status(err.statusCode).json({
+            success: false,
+            message: err.message,
+            errors: err.errors,
+        });
+    }
     console.error(err);
-
-    res.status(500).json({
-        message: "Something went wrong",
-    });
+    res.status(500).json({ message: "Something went wrong" });
 });
 
 

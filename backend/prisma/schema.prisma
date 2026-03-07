@@ -9,6 +9,7 @@ datasource db {
 model Company {
   id        Int        @id @default(autoincrement())
   name      String
+  isActive  Boolean    @default(true)
   managers  Manager[]
   staff     Staff[]
   locations Location[]
@@ -22,6 +23,7 @@ model Manager {
   email        String   @unique
   password     String
   role         Role     @default(MANAGER)
+  isActive     Boolean  @default(true)
   refreshToken String?
   company      Company  @relation(fields: [companyId], references: [id])
   companyId    Int
@@ -30,25 +32,27 @@ model Manager {
 }
 
 model Staff {
-  id           Int      @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   name         String
-  email        String   @unique
+  email        String    @unique
   password     String
-  role         Role     @default(STAFF)
+  role         Role      @default(STAFF)
+  isActive     Boolean   @default(true)
   refreshToken String?
-  company      Company  @relation(fields: [companyId], references: [id])
+  company      Company   @relation(fields: [companyId], references: [id])
   companyId    Int
-  location     Location @relation(fields: [locationId], references: [id])
-  locationId   Int
+  location     Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  locationId   Int?
   tasks        Task[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model Location {
   id        Int      @id @default(autoincrement())
   name      String
   address   String?
+  isActive  Boolean  @default(true)
   company   Company  @relation(fields: [companyId], references: [id])
   companyId Int
   staff     Staff[]
@@ -58,18 +62,19 @@ model Location {
 }
 
 model Task {
-  id          Int        @id @default(autoincrement())
-  title       String
-  description String?
-  status      TaskStatus @default(PENDING)
-  staff       Staff      @relation(fields: [staffId], references: [id])
-  staffId     Int
-  location    Location   @relation(fields: [locationId], references: [id])
-  locationId  Int
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  shiftStart  DateTime
-  shiftEnd    DateTime 
+  id            Int            @id @default(autoincrement())
+  title         String
+  description   String?
+  status        TaskStatus     @default(PENDING)
+  isActive      Boolean        @default(true)
+  staff         Staff?         @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  staffId       Int?
+  location      Location       @relation(fields: [locationId], references: [id])
+  locationId    Int
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  shiftStart    DateTime
+  shiftEnd      DateTime
   recurringType RecurringType?
 }
 
