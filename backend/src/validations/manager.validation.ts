@@ -60,22 +60,62 @@ export const createLocationSchema = z.object({
         .string({ message: "location name is required" }),
     address: z
         .string({ message: "location address is required" }),
+    latitude: z.number({ message: "latitude is required" }),
+    longitude: z.number({ message: "longitude is required" })
 
 })
 
 export type createLocationInput = z.infer<typeof createLocationSchema>;
 
-export const createTaskSchema = z.object({
+export const createTaskSchema = z
+  .object({
     title: z.string({ message: "Title is required" }),
     description: z.string().optional(),
-    locationId: z.number().int(),
-    shiftStart: z.coerce.date(),
-    shiftEnd: z.coerce.date(),
-    recurringType: z.enum(["DAILY", "WEEKLY", "MONTHLY"]).optional(),
+    locationId: z.number({ message: "Location is required" }).int(),
+    shiftStart: z.coerce.date({ message: "Shift start is required" }),
+    shiftEnd: z.coerce.date({ message: "Shift end is required" }),
+    recurringType: z.enum(["DAILY", "ONCE"]).optional(),
+    effectiveDate: z.coerce.date({ message: "Effective date is required" }),
   })
-  .refine((data) => data.shiftEnd > data.shiftStart, {
-    message: "Shift end must be after shift start",
-    path: ["shiftEnd"],
-  });
+  .superRefine((data, ctx) => {
+    const now = new Date();
 
+    const threeMinutesLater = new Date(now.getTime() + 3 * 60 * 1000);
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    
+    if (data.shiftEnd <= data.shiftStart) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Shift end must be after shift start",
+        path: ["shiftEnd"],
+      });
+    }
+
+    
+    if (data.effectiveDate < todayStart) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Effective date cannot be in the past",
+        path: ["effectiveDate"],
+      });
+    }
+
+    
+    if (data.shiftStart < threeMinutesLater) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Shift start must be at least 3 minutes from now",
+        path: ["shiftStart"],
+      });
+    }
+  });
 export type createTaskInput =z.infer<typeof createTaskSchema>;
+
+// export const updateTaskSchema = createTaskSchema.extend({
+//   taskTemplateId: z.number()
+// });
+
+// export type updateTaskInput= z.infer<typeof updateTaskSchema>;
