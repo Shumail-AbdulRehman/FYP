@@ -32,50 +32,73 @@ model Manager {
 }
 
 model Staff {
-  id           Int       @id @default(autoincrement())
-  name         String
-  email        String    @unique
-  password     String
-  role         Role      @default(STAFF)
-  isActive     Boolean   @default(true)
-  refreshToken String?
-  company      Company   @relation(fields: [companyId], references: [id])
-  companyId    Int
-  location     Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  locationId   Int?
-  tasks        Task[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id            Int            @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  password      String
+  role          Role           @default(STAFF)
+  isActive      Boolean        @default(true)
+  refreshToken  String?
+  company       Company        @relation(fields: [companyId], references: [id])
+  companyId     Int
+  location      Location?      @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  locationId    Int?
+  taskTemplates TaskTemplate[]
+  taskInstances TaskInstance[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 }
 
 model Location {
-  id        Int      @id @default(autoincrement())
-  name      String
-  address   String?
-  isActive  Boolean  @default(true)
-  company   Company  @relation(fields: [companyId], references: [id])
-  companyId Int
-  staff     Staff[]
-  tasks     Task[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Task {
   id            Int            @id @default(autoincrement())
-  title         String
-  description   String?
-  status        TaskStatus     @default(PENDING)
+  name          String
+  address       String?
   isActive      Boolean        @default(true)
-  staff         Staff?         @relation(fields: [staffId], references: [id], onDelete: SetNull)
-  staffId       Int?
-  location      Location       @relation(fields: [locationId], references: [id])
-  locationId    Int
+  company       Company        @relation(fields: [companyId], references: [id])
+  companyId     Int
+  staff         Staff[]
+  taskTemplates TaskTemplate[]
+  taskInstances TaskInstance[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  shiftStart    DateTime
-  shiftEnd      DateTime
-  recurringType RecurringType?
+}
+
+model TaskTemplate {
+  id               Int            @id @default(autoincrement())
+  title            String
+  description      String?
+  isActive         Boolean        @default(true)
+  staff            Staff?         @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  staffId          Int?
+  location         Location       @relation(fields: [locationId], references: [id])
+  locationId       Int
+  shiftStart       String
+  shiftEnd         String
+  recurringType    RecurringType?
+  recurringEndDate DateTime?
+  instances        TaskInstance[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+model TaskInstance {
+  id          Int        @id @default(autoincrement())
+  template    TaskTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  templateId  Int?
+  title       String
+  date        DateTime
+  shiftStart  DateTime
+  shiftEnd    DateTime
+  status      TaskStatus @default(PENDING)
+  isLate      Boolean    @default(false)
+  startedAt   DateTime?
+  completedAt DateTime?
+  staff       Staff?     @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  staffId     Int?
+  location    Location   @relation(fields: [locationId], references: [id])
+  locationId  Int
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 enum RecurringType {
@@ -93,4 +116,6 @@ enum TaskStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
+  LATE
+  MISSED
 }
