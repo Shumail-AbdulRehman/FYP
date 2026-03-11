@@ -3,3 +3,13 @@ node_modules
 .env
 
 /generated/prisma
+# OS / Editor lock/temp files
+*~
+.~lock.*
+
+# Office / Documents
+*.doc
+*.docx
+*.odt
+*.pdf
+*.md
