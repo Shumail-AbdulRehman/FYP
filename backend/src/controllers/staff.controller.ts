@@ -1,11 +1,25 @@
-import { Response, Request } from "express"
+import { Request, Response } from "express";
+import bcrypt from "bcrypt";
+import { 
+  createStaffSchema, 
+   
+} from "../validations/manager.validation.js";
+
+import {staffLoginSchema} from "../validations/staff.validation.js"
 import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { generateAccessToken, generateRefreshToken, isPasswordCorrect } from "../utils/auth.js";
-import { staffLoginSchema } from "../validations/staff.validation.js";
 
-export const loginStaff = async (req: Request, res: Response) => {
+interface AuthenticatedRequest extends Request {
+  user: {
+    id: number;
+    companyId: number;
+    role: "MANAGER" | "STAFF";
+  };
+}
+
+export const loginStaff = async (req: AuthenticatedRequest, res: Response) => {
     const result = staffLoginSchema.safeParse(req.body);
 
     if (!result.success) {
@@ -62,7 +76,7 @@ export const loginStaff = async (req: Request, res: Response) => {
         );
 }
 
-export const logoutStaff = async (req: Request, res: Response) => {
+export const logoutStaff = async (req: AuthenticatedRequest, res: Response) => {
     await prisma.staff.update({
         where: { id: (req as any).user.id },
         data: { refreshToken: null },
@@ -81,3 +95,45 @@ export const logoutStaff = async (req: Request, res: Response) => {
             new ApiResponse(200, {}, "staff logout sucessfully")
         );
 }
+
+export const createStaff = async (req: AuthenticatedRequest, res: Response) => {
+  const result = createStaffSchema.safeParse(req.body);
+
+  if (!result.success) {
+    const errors = result.error.issues.map(e => ({
+      field: e.path.join("."),
+      message: e.message
+    }));
+    throw new ApiError(400, "Validation failed", errors);
+  }
+
+  const { name, email, password, locationId } = result.data;
+
+  const existingStaff = await prisma.staff.findUnique({ where: { email } });
+  if (existingStaff) throw new ApiError(409, "Staff with this email already exists");
+
+  if (locationId) {
+    const location = await prisma.location.findUnique({ where: { id: locationId } });
+    if (!location || location.companyId !== req.user.companyId || !location.isActive) {
+      throw new ApiError(404, "Location not found in your company");
+    }
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const staff = await prisma.staff.create({
+    data: {
+      name,
+      email,
+      password: hashedPassword,
+      companyId: req.user.companyId,
+      locationId: locationId || null
+    }
+  });
+
+    const { password: _, ...safeStaff } = staff;
+
+    res.status(201).json(
+        new ApiResponse(201, safeStaff, "Staff created successfully")
+    );
+};
