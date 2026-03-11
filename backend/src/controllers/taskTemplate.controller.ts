@@ -1,22 +1,10 @@
 import { Request, Response } from "express";
-import bcrypt from "bcrypt";
-import {  
-  createTaskSchema 
-} from "../validations/manager.validation.js";
+import { createTaskSchema } from "../validations/manager.validation.js";
 import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 
-interface AuthenticatedRequest extends Request {
-  user: {
-    id: number;
-    companyId: number;
-    role: "MANAGER" | "STAFF";
-  };
-}
-
-
-export const createTaskTemplate = async (req: AuthenticatedRequest, res: Response) => {
+export const createTaskTemplate = async (req: Request, res: Response) => {
   const result = createTaskSchema.safeParse(req.body);
 
   if (!result.success) {
@@ -31,7 +19,7 @@ export const createTaskTemplate = async (req: AuthenticatedRequest, res: Respons
 
   const location = await prisma.location.findUnique({ where: { id: locationId } });
 
-  if (!location || location.companyId !== req.user.companyId || !location.isActive) {
+  if (!location || location.companyId !== req.user!.companyId || !location.isActive) {
     throw new ApiError(404, "Location not found in your company");
   }
 
@@ -42,7 +30,7 @@ export const createTaskTemplate = async (req: AuthenticatedRequest, res: Respons
   res.status(201).json(new ApiResponse(201, taskTemplate, "Task template created successfully"));
 };
 
-export const editTaskTemplate = async (req: AuthenticatedRequest, res: Response) => {
+export const editTaskTemplate = async (req: Request, res: Response) => {
   const taskTemplateId = Number(req.params.id);
   if (isNaN(taskTemplateId)) throw new ApiError(400, "Invalid task template id");
 
@@ -61,7 +49,7 @@ export const editTaskTemplate = async (req: AuthenticatedRequest, res: Response)
     include: { location: true }
   });
 
-  if (!template || template.location.companyId !== req.user.companyId) {
+  if (!template || template.location.companyId !== req.user!.companyId) {
     throw new ApiError(404, "Task template not found in your company");
   }
 
@@ -74,7 +62,7 @@ export const editTaskTemplate = async (req: AuthenticatedRequest, res: Response)
       where: { id: result.data.locationId }
     });
 
-    if (!location || location.companyId !== req.user.companyId || !location.isActive) {
+    if (!location || location.companyId !== req.user!.companyId || !location.isActive) {
       throw new ApiError(404, "New location not found in your company");
     }
   }
@@ -87,7 +75,7 @@ export const editTaskTemplate = async (req: AuthenticatedRequest, res: Response)
   res.status(200).json(new ApiResponse(200, updated, "Task template updated successfully"));
 };
 
-export const deleteTaskTemplate = async (req: AuthenticatedRequest, res: Response) => {
+export const deleteTaskTemplate = async (req: Request, res: Response) => {
   const taskTemplateId = Number(req.params.id);
   if (isNaN(taskTemplateId)) throw new ApiError(400, "Invalid task template id");
 
@@ -96,7 +84,7 @@ export const deleteTaskTemplate = async (req: AuthenticatedRequest, res: Respons
     include: { location: true }
   });
 
-  if (!template || template.location.companyId !== req.user.companyId) {
+  if (!template || template.location.companyId !== req.user!.companyId) {
     throw new ApiError(404, "Task template not found in your company");
   }
 

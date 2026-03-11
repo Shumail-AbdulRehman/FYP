@@ -3,18 +3,7 @@ import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 
-
-interface AuthenticatedRequest extends Request {
-  user: {
-    id: number;
-    companyId: number;
-    role: "MANAGER" | "STAFF";
-  };
-}
-
-
-
-export const assignStaffToLocation = async (req: AuthenticatedRequest, res: Response) => {
+export const assignStaffToLocation = async (req: Request, res: Response) => {
   const staffId = Number(req.params.staffId);
   const locationId = Number(req.params.locationId);
 
@@ -24,13 +13,13 @@ export const assignStaffToLocation = async (req: AuthenticatedRequest, res: Resp
 
   const staff = await prisma.staff.findUnique({ where: { id: staffId } });
 
-  if (!staff || staff.companyId !== req.user.companyId) {
+  if (!staff || staff.companyId !== req.user!.companyId) {
     throw new ApiError(404, "Staff not found in your company");
   }
 
   const location = await prisma.location.findUnique({ where: { id: locationId } });
 
-  if (!location || location.companyId !== req.user.companyId || !location.isActive) {
+  if (!location || location.companyId !== req.user!.companyId || !location.isActive) {
     throw new ApiError(404, "Location not found in your company");
   }
 
@@ -42,7 +31,7 @@ export const assignStaffToLocation = async (req: AuthenticatedRequest, res: Resp
   res.status(200).json(new ApiResponse(200, updated, "Staff assigned to location successfully"));
 };
 
-export const assignStaffToTaskTemplate = async (req: AuthenticatedRequest, res: Response) => {
+export const assignStaffToTaskTemplate = async (req: Request, res: Response) => {
   const templateId = Number(req.params.templateId);
   const staffId = Number(req.params.staffId);
 
@@ -55,17 +44,17 @@ export const assignStaffToTaskTemplate = async (req: AuthenticatedRequest, res: 
     include: { location: true }
   });
 
-  if (!template || template.location.companyId !== req.user.companyId) {
+  if (!template || template.location.companyId !== req.user!.companyId) {
     throw new ApiError(404, "Task template not found in your company");
   }
 
   if (!template.isActive) {
-  throw new ApiError(400, "Task template is inactive");
-}
+    throw new ApiError(400, "Task template is inactive");
+  }
 
   const staff = await prisma.staff.findUnique({ where: { id: staffId } });
 
-  if (!staff || staff.companyId !== req.user.companyId) {
+  if (!staff || staff.companyId !== req.user!.companyId) {
     throw new ApiError(404, "Staff not found in your company");
   }
 

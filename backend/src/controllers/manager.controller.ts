@@ -1,24 +1,13 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import { 
-  managerSignupSchema, 
-  managerLoginSchema, 
-  createStaffSchema, 
-  createLocationSchema, 
-  createTaskSchema 
+import {
+    managerSignupSchema,
+    managerLoginSchema,
 } from "../validations/manager.validation.js";
 import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { generateAccessToken, generateRefreshToken, isPasswordCorrect } from "../utils/auth.js";
-
-interface AuthenticatedRequest extends Request {
-  user: {
-    id: number;
-    companyId: number;
-    role: "MANAGER" | "STAFF";
-  };
-}
 
 export const signupManager = async (req: Request, res: Response) => {
 
@@ -149,16 +138,16 @@ export const loginManager = async (req: Request, res: Response) => {
         );
 };
 
-export const logoutManager = async (req: AuthenticatedRequest, res: Response) => {
-  await prisma.manager.update({
-    where: { id: req.user.id },
-    data: { refreshToken: null }
-  });
+export const logoutManager = async (req: Request, res: Response) => {
+    await prisma.manager.update({
+        where: { id: req.user!.id },
+        data: { refreshToken: null }
+    });
 
-  const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === "production" };
+    const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === "production" };
 
-  res.clearCookie("accessToken", cookieOptions)
-    .clearCookie("refreshToken", cookieOptions)
-    .status(200)
-    .json(new ApiResponse(200, {}, "Manager logged out successfully"));
+    res.clearCookie("accessToken", cookieOptions)
+        .clearCookie("refreshToken", cookieOptions)
+        .status(200)
+        .json(new ApiResponse(200, {}, "Manager logged out successfully"));
 };
