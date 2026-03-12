@@ -39,7 +39,7 @@ export const editLocation = async (req: Request, res: Response) => {
     throw new ApiError(400, "Validation failed", errors);
   }
 
-  const location = await prisma.location.findUnique({ where: { id: locationId } });
+  const location = await prisma.location.findUnique({ where: { id: locationId ,isActive:true} });
 
   if (!location || location.companyId !== req.user!.companyId) {
     throw new ApiError(404, "Location not found in your company");
