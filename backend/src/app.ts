@@ -6,6 +6,7 @@ import { Response, Request, NextFunction, Errback } from "express";
 import { ApiError } from "./utils/ApiError.js";
 import "./cron/taskScheduler.js";
 import "./cron/taskStatusCron.js";
+import "./cron/attendanceCron.js";
 
 
 
@@ -27,12 +28,14 @@ import staffRouter from "./routes/staff.route.js";
 import locationRouter from "./routes/location.route.js";
 import taskTemplateRouter from "./routes/taskTemplate.route.js";
 import assignmentRouter from "./routes/assignment.route.js";
+import attendanceRouter from "./routes/attendance.route.js";
 
 app.use("/api/managers", managerRouter);
 app.use("/api/staff", staffRouter);
 app.use("/api/locations", locationRouter);
 app.use("/api/task-templates", taskTemplateRouter);
 app.use("/api/assignments", assignmentRouter);
+app.use("/api/attendance", attendanceRouter);
 
 app.use((err: Errback, req: Request, res: Response, next: NextFunction) => {
     if (err instanceof ApiError) {
