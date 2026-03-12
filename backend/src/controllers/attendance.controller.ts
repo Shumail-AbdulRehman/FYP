@@ -31,25 +31,60 @@ export const assignShiftToStaff = async (req: Request, res: Response) => {
         throw new ApiError(400, "Staff is deactivated");
     }
 
-    const newShiftStartMin = result.data.shiftStart.getHours() * 60 + result.data.shiftStart.getMinutes();
-    const newShiftEndMin = result.data.shiftEnd.getHours() * 60 + result.data.shiftEnd.getMinutes();
+    const newShiftStartMin =
+        result.data.shiftStart.getHours() * 60 + result.data.shiftStart.getMinutes();
+
+    const newShiftEndMin =
+        result.data.shiftEnd.getHours() * 60 + result.data.shiftEnd.getMinutes();
 
     const activeTemplates = await prisma.taskTemplate.findMany({
         where: { staffId, isActive: true },
         select: { id: true, title: true, shiftStart: true, shiftEnd: true },
     });
 
+    const isWithinRange = (
+        innerStart: number,
+        innerEnd: number,
+        outerStart: number,
+        outerEnd: number
+    ) => {
+        if (outerEnd <= outerStart) outerEnd += 1440;
+        if (innerEnd <= innerStart) innerEnd += 1440;
+
+        if (innerStart < outerStart) {
+            innerStart += 1440;
+            innerEnd += 1440;
+        }
+
+        return innerStart >= outerStart && innerEnd <= outerEnd;
+    };
+
     const conflicts = activeTemplates.filter(t => {
-        const taskStartMin = t.shiftStart.getHours() * 60 + t.shiftStart.getMinutes();
-        const taskEndMin = t.shiftEnd.getHours() * 60 + t.shiftEnd.getMinutes();
-        return taskStartMin < newShiftStartMin || taskEndMin > newShiftEndMin;
+        const taskStart =
+            t.shiftStart.getHours() * 60 + t.shiftStart.getMinutes();
+
+        const taskEnd =
+            t.shiftEnd.getHours() * 60 + t.shiftEnd.getMinutes();
+
+        return !isWithinRange(taskStart, taskEnd, newShiftStartMin, newShiftEndMin);
     });
 
     if (conflicts.length > 0) {
-        const details = conflicts.map(t => `"${t.title}" (${t.shiftStart.toISOString()} - ${t.shiftEnd.toISOString()})`);
+        const formatTime = (d: Date) =>
+            `${d.getHours().toString().padStart(2, "0")}:${d
+                .getMinutes()
+                .toString()
+                .padStart(2, "0")}`;
+
+        const details = conflicts.map(
+            t => `"${t.title}" (${formatTime(t.shiftStart)} - ${formatTime(t.shiftEnd)})`
+        );
+
         throw new ApiError(
             400,
-            `Cannot update shift: ${conflicts.length} task(s) would fall outside the new shift window: ${details.join(", ")}. Please reassign or update those tasks first.`
+            `Cannot update shift: ${conflicts.length} task(s) would fall outside the new shift window: ${details.join(
+                ", "
+            )}. Please reassign or update those tasks first.`
         );
     }
 
@@ -69,7 +104,9 @@ export const assignShiftToStaff = async (req: Request, res: Response) => {
         },
     });
 
-    res.status(200).json(new ApiResponse(200, updated, "Shift assigned to staff successfully"));
+    res
+        .status(200)
+        .json(new ApiResponse(200, updated, "Shift assigned to staff successfully"));
 };
 
 export const checkIn = async (req: Request, res: Response) => {
