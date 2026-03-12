@@ -249,6 +249,8 @@ export const checkOut = async (req: Request, res: Response) => {
 };
 
 export const getMyAttendance = async (req: Request, res: Response) => {
+
+    if (req.user?.role === "MANAGER") throw new ApiError(401,"only staff can get their attendance");
     const staffId = req.user!.id;
 
     const attendance = await prisma.attendance.findMany({
