@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import bcrypt from "bcrypt";
 import { createStaffSchema } from "../validations/manager.validation.js";
 import { staffLoginSchema } from "../validations/staff.validation.js";
 import { prisma } from "../prisma/prisma.js";
@@ -64,6 +63,9 @@ export const loginStaff = async (req: Request, res: Response) => {
 };
 
 export const logoutStaff = async (req: Request, res: Response) => {
+
+  if (req.user!.role !== "STAFF") throw new ApiError(403, "Only staff can use this endpoint");
+  
   await prisma.staff.update({
     where: { id: req.user!.id },
     data: { refreshToken: null },
@@ -106,16 +108,15 @@ export const createStaff = async (req: Request, res: Response) => {
     }
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  
 
   const staff = await prisma.staff.create({
     data: {
       name,
       email,
-      password: hashedPassword,
+      password,
       companyId: req.user!.companyId,
       locationId: locationId || null,
-      // Fix #10: optionally set shift at creation time
       shiftStart: shiftStart || null,
       shiftEnd: shiftEnd || null,
     }

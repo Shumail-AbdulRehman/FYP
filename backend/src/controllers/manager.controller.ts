@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import bcrypt from "bcrypt";
+
 import {
     managerSignupSchema,
     managerLoginSchema,
@@ -31,7 +31,7 @@ export const signupManager = async (req: Request, res: Response) => {
         throw new ApiError(409, "Manager with this email already exists");
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+
 
     const company = await prisma.company.create({
         data: { name: companyName }
@@ -41,7 +41,7 @@ export const signupManager = async (req: Request, res: Response) => {
         data: {
             name,
             email,
-            password: hashedPassword,
+            password,
             companyId: company.id
         }
     });
@@ -139,6 +139,9 @@ export const loginManager = async (req: Request, res: Response) => {
 };
 
 export const logoutManager = async (req: Request, res: Response) => {
+
+    if (req.user!.role !== "MANAGER") throw new ApiError(403, "Only managers can use this endpoint");
+    
     await prisma.manager.update({
         where: { id: req.user!.id },
         data: { refreshToken: null }

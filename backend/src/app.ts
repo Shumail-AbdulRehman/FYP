@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
-import { Response, Request, NextFunction, Errback } from "express";
+import { Response, Request, NextFunction } from "express";
 import { ApiError } from "./utils/ApiError.js";
 import "./cron/taskScheduler.js";
 import "./cron/taskStatusCron.js";
@@ -38,7 +38,7 @@ app.use("/api/task-templates", taskTemplateRouter);
 app.use("/api/assignments", assignmentRouter);
 app.use("/api/attendance", attendanceRouter);
 
-app.use((err: Errback, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     if (err instanceof ApiError) {
         return res.status(err.statusCode).json({
             success: false,
