@@ -65,7 +65,7 @@ export const loginStaff = async (req: Request, res: Response) => {
 export const logoutStaff = async (req: Request, res: Response) => {
 
   if (req.user!.role !== "STAFF") throw new ApiError(403, "Only staff can use this endpoint");
-  
+
   await prisma.staff.update({
     where: { id: req.user!.id },
     data: { refreshToken: null },
@@ -142,6 +142,8 @@ export const getStaff = async (req: Request, res: Response) => {
       locationId: true,
       createdAt: true,
       updatedAt: true,
+      shiftStart:true,
+      shiftEnd:true
     }
   });
 
