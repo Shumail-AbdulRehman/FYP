@@ -62,6 +62,20 @@ export const assignStaffToTaskTemplate = async (req: Request, res: Response) => 
     throw new ApiError(400, "Staff must belong to the same location");
   }
 
+  if (staff.shiftStart && staff.shiftEnd) {
+    const staffStartMin = staff.shiftStart.getHours() * 60 + staff.shiftStart.getMinutes();
+    const staffEndMin = staff.shiftEnd.getHours() * 60 + staff.shiftEnd.getMinutes();
+    const taskStartMin = template.shiftStart.getHours() * 60 + template.shiftStart.getMinutes();
+    const taskEndMin = template.shiftEnd.getHours() * 60 + template.shiftEnd.getMinutes();
+
+    if (taskStartMin < staffStartMin || taskEndMin > staffEndMin) {
+      throw new ApiError(
+        400,
+        `Task shift (${template.shiftStart.toISOString()} - ${template.shiftEnd.toISOString()}) falls outside staff's attendance shift. Please update the staff's shift or choose a different time.`
+      );
+    }
+  }
+
   const updated = await prisma.taskTemplate.update({
     where: { id: templateId },
     data: { staffId }
@@ -69,3 +83,5 @@ export const assignStaffToTaskTemplate = async (req: Request, res: Response) => 
 
   res.status(200).json(new ApiResponse(200, updated, "Staff assigned to task template successfully"));
 };
+
+

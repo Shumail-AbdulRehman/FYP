@@ -31,6 +31,28 @@ export const assignShiftToStaff = async (req: Request, res: Response) => {
         throw new ApiError(400, "Staff is deactivated");
     }
 
+    const newShiftStartMin = result.data.shiftStart.getHours() * 60 + result.data.shiftStart.getMinutes();
+    const newShiftEndMin = result.data.shiftEnd.getHours() * 60 + result.data.shiftEnd.getMinutes();
+
+    const activeTemplates = await prisma.taskTemplate.findMany({
+        where: { staffId, isActive: true },
+        select: { id: true, title: true, shiftStart: true, shiftEnd: true },
+    });
+
+    const conflicts = activeTemplates.filter(t => {
+        const taskStartMin = t.shiftStart.getHours() * 60 + t.shiftStart.getMinutes();
+        const taskEndMin = t.shiftEnd.getHours() * 60 + t.shiftEnd.getMinutes();
+        return taskStartMin < newShiftStartMin || taskEndMin > newShiftEndMin;
+    });
+
+    if (conflicts.length > 0) {
+        const details = conflicts.map(t => `"${t.title}" (${t.shiftStart.toISOString()} - ${t.shiftEnd.toISOString()})`);
+        throw new ApiError(
+            400,
+            `Cannot update shift: ${conflicts.length} task(s) would fall outside the new shift window: ${details.join(", ")}. Please reassign or update those tasks first.`
+        );
+    }
+
     const updated = await prisma.staff.update({
         where: { id: staffId },
         data: {
