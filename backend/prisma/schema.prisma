@@ -55,7 +55,7 @@ model Staff {
 model Location {
   id            Int            @id @default(autoincrement())
   name          String
-  address       String?
+  address       String
   isActive      Boolean        @default(true)
   company       Company        @relation(fields: [companyId], references: [id])
   companyId     Int
