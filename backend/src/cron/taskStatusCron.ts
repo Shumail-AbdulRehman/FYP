@@ -32,29 +32,54 @@ cron.schedule("*/5 * * * *", async () => {
       });
     }
 
-    const graceHours = 2;
-
-    const missedThreshold = new Date(
-      now.getTime() - graceHours * 60 * 60 * 1000
-    );
-
     const missedTasks = await prisma.taskInstance.updateMany({
       where: {
-        shiftEnd: { lt: missedThreshold },
+        shiftEnd: { lt: now },
         status: {
-          in: ["PENDING", "IN_PROGRESS"]
+          in: ["PENDING"]
         },
         isActive: true
       },
       data: {
-        status: "MISSED"
+        status: "MISSED",
+        isLate: true
       }
     });
 
-    console.log(`Late tasks updated: ${pendingLateTasks.length}`);
-    console.log(`Missed tasks updated: ${missedTasks.count}`);
+    const staleTasks = await prisma.taskInstance.findMany({
+      where: {
+        shiftEnd: { lt: now },
+        status: "IN_PROGRESS",
+        isActive: true
+      },
+      select: {
+        id: true,
+        shiftEnd: true
+      }
+    });
+
+    for (const task of staleTasks) {
+      const lateMinutes = Math.floor(
+        (now.getTime() - task.shiftEnd.getTime()) / (1000 * 60)
+      );
+
+      await prisma.taskInstance.update({
+        where: { id: task.id },
+        data: {
+          status: "LATE",
+          isLate: true,
+          lateMinutes
+        }
+      });
+    }
+
+    if (pendingLateTasks.length || missedTasks.count || staleTasks.length) {
+      console.log(
+        `Cron: ${pendingLateTasks.length} late, ${missedTasks.count} missed, ${staleTasks.length} stale IN_PROGRESS`
+      );
+    }
 
   } catch (error) {
-    console.error("Cron job error:", error);
+    console.error("Task status cron error:", error);
   }
 });
