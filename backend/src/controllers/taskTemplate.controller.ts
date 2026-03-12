@@ -88,10 +88,13 @@ export const deleteTaskTemplate = async (req: Request, res: Response) => {
     throw new ApiError(404, "Task template not found in your company");
   }
 
-  await prisma.taskTemplate.update({
-    where: { id: taskTemplateId },
-    data: { isActive: false }
-  });
+  await prisma.$transaction([
+    prisma.taskTemplate.update({ where: { id: taskTemplateId }, data: { isActive: false } }),
+    prisma.taskInstance.updateMany({
+        where: { templateId: taskTemplateId, status: { in: ["PENDING", "IN_PROGRESS"] } },
+        data: { status: "MISSED", isActive: false }
+    })
+]);
 
   res.status(200).json(new ApiResponse(200, {}, "Task template deleted successfully"));
 };
