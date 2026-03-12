@@ -11,7 +11,7 @@ export const assignStaffToLocation = async (req: Request, res: Response) => {
     throw new ApiError(400, "Invalid staff or location id");
   }
 
-  const staff = await prisma.staff.findUnique({ where: { id: staffId } });
+  const staff = await prisma.staff.findUnique({ where: { id: staffId, isActive:true } });
 
   if (!staff || staff.companyId !== req.user!.companyId) {
     throw new ApiError(404, "Staff not found in your company");
@@ -52,7 +52,7 @@ export const assignStaffToTaskTemplate = async (req: Request, res: Response) => 
     throw new ApiError(400, "Task template is inactive");
   }
 
-  const staff = await prisma.staff.findUnique({ where: { id: staffId } });
+  const staff = await prisma.staff.findUnique({ where: { id: staffId, isActive: true } });
 
   if (!staff || staff.companyId !== req.user!.companyId) {
     throw new ApiError(404, "Staff not found in your company");
@@ -68,23 +68,21 @@ export const assignStaffToTaskTemplate = async (req: Request, res: Response) => 
     const taskStartMin = template.shiftStart.getHours() * 60 + template.shiftStart.getMinutes();
     const taskEndMin = template.shiftEnd.getHours() * 60 + template.shiftEnd.getMinutes();
 
-    // Fix #7: overnight-aware shift containment check.
-    // An "overnight" window is one where endMin < startMin (e.g. 22:00–06:00).
+   
     const isOvernightShift = staffEndMin < staffStartMin;
     let taskFitsInShift: boolean;
 
     if (isOvernightShift) {
       const isOvernightTask = taskEndMin < taskStartMin;
       if (isOvernightTask) {
-        // Both shift and task span midnight: task start must be >= shift start, task end must be <= shift end.
+        
         taskFitsInShift = taskStartMin >= staffStartMin && taskEndMin <= staffEndMin;
       } else {
-        // Normal task within an overnight shift: the task must sit entirely in the
-        // "evening" portion [staffStartMin, 24h) OR entirely in the "morning" portion [0, staffEndMin].
+       
         taskFitsInShift = taskStartMin >= staffStartMin || taskEndMin <= staffEndMin;
       }
     } else {
-      // Normal daytime shift: straightforward containment.
+     
       taskFitsInShift = taskStartMin >= staffStartMin && taskEndMin <= staffEndMin;
     }
 
