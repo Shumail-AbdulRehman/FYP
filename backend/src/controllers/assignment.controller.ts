@@ -68,7 +68,27 @@ export const assignStaffToTaskTemplate = async (req: Request, res: Response) => 
     const taskStartMin = template.shiftStart.getHours() * 60 + template.shiftStart.getMinutes();
     const taskEndMin = template.shiftEnd.getHours() * 60 + template.shiftEnd.getMinutes();
 
-    if (taskStartMin < staffStartMin || taskEndMin > staffEndMin) {
+    // Fix #7: overnight-aware shift containment check.
+    // An "overnight" window is one where endMin < startMin (e.g. 22:00–06:00).
+    const isOvernightShift = staffEndMin < staffStartMin;
+    let taskFitsInShift: boolean;
+
+    if (isOvernightShift) {
+      const isOvernightTask = taskEndMin < taskStartMin;
+      if (isOvernightTask) {
+        // Both shift and task span midnight: task start must be >= shift start, task end must be <= shift end.
+        taskFitsInShift = taskStartMin >= staffStartMin && taskEndMin <= staffEndMin;
+      } else {
+        // Normal task within an overnight shift: the task must sit entirely in the
+        // "evening" portion [staffStartMin, 24h) OR entirely in the "morning" portion [0, staffEndMin].
+        taskFitsInShift = taskStartMin >= staffStartMin || taskEndMin <= staffEndMin;
+      }
+    } else {
+      // Normal daytime shift: straightforward containment.
+      taskFitsInShift = taskStartMin >= staffStartMin && taskEndMin <= staffEndMin;
+    }
+
+    if (!taskFitsInShift) {
       throw new ApiError(
         400,
         `Task shift (${template.shiftStart.toISOString()} - ${template.shiftEnd.toISOString()}) falls outside staff's attendance shift. Please update the staff's shift or choose a different time.`
@@ -83,5 +103,4 @@ export const assignStaffToTaskTemplate = async (req: Request, res: Response) => 
 
   res.status(200).json(new ApiResponse(200, updated, "Staff assigned to task template successfully"));
 };
-
 

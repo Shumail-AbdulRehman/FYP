@@ -1,22 +1,22 @@
 import { z } from "zod";
 
 export const managerSignupSchema = z.object({
-    companyName: z
-        .string({ message: "company name is required" })
-    ,
-    name: z
-        .string({ message: "Name is required" })
-        .min(2, "Name must be at least 2 characters"),
+  companyName: z
+    .string({ message: "company name is required" })
+  ,
+  name: z
+    .string({ message: "Name is required" })
+    .min(2, "Name must be at least 2 characters"),
 
 
-    email: z
-        .string({ message: "Email is required" })
-        .email("Invalid email format"),
+  email: z
+    .string({ message: "Email is required" })
+    .email("Invalid email format"),
 
 
-    password: z
-        .string({ message: "Password is required" })
-        .min(6, "Password must be at least 6 characters"),
+  password: z
+    .string({ message: "Password is required" })
+    .min(6, "Password must be at least 6 characters"),
 
 
 
@@ -25,43 +25,72 @@ export const managerSignupSchema = z.object({
 export type ManagerSignupInput = z.infer<typeof managerSignupSchema>;
 
 export const managerLoginSchema = z.object({
-    email: z
-        .string({ message: "Email is required" })
-        .email("Invalid email format"),
-    password: z
-        .string({ message: "Password is required" })
-        .min(1, "Password is required"),
+  email: z
+    .string({ message: "Email is required" })
+    .email("Invalid email format"),
+  password: z
+    .string({ message: "Password is required" })
+    .min(1, "Password is required"),
 });
 
 export type ManagerLoginInput = z.infer<typeof managerLoginSchema>;
 
-export const createStaffSchema = z.object({
+export const createStaffSchema = z
+  .object({
     name: z
-        .string({ message: "Name is required" })
-        .min(2, "Name must be at least 2 characters"),
+      .string({ message: "Name is required" })
+      .min(2, "Name must be at least 2 characters"),
     email: z
-        .string({ message: "Email is required" })
-        .email("Invalid email format"),
+      .string({ message: "Email is required" })
+      .email("Invalid email format"),
     password: z
-        .string({ message: "Password is required" })
-        .min(6, "Password must be at least 6 characters"),
+      .string({ message: "Password is required" })
+      .min(6, "Password must be at least 6 characters"),
     locationId: z
-        .number({ message: "Location ID must be a number" })
-        .int("Location ID must be an integer")
-        .positive("Location ID must be positive")
-        .optional(),
-});
+      .number({ message: "Location ID must be a number" })
+      .int("Location ID must be an integer")
+      .positive("Location ID must be positive")
+      .optional(),
+   
+    shiftStart: z.coerce.date({ message: "Shift start must be a valid date" }).optional(),
+    shiftEnd: z.coerce.date({ message: "Shift end must be a valid date" }).optional(),
+  })
+  .superRefine((data, ctx) => {
+    const hasStart = data.shiftStart !== undefined;
+    const hasEnd = data.shiftEnd !== undefined;
+
+    if (hasStart !== hasEnd) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Both shiftStart and shiftEnd must be provided together",
+        path: hasStart ? ["shiftEnd"] : ["shiftStart"],
+      });
+      return;
+    }
+
+    if (hasStart && hasEnd) {
+      const startMin = data.shiftStart!.getHours() * 60 + data.shiftStart!.getMinutes();
+      const endMin = data.shiftEnd!.getHours() * 60 + data.shiftEnd!.getMinutes();
+      if (startMin === endMin) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Shift start and end cannot be the same time",
+          path: ["shiftEnd"],
+        });
+      }
+    }
+  });
 
 export type CreateStaffInput = z.infer<typeof createStaffSchema>;
 
 
 export const createLocationSchema = z.object({
-    name: z
-        .string({ message: "location name is required" }),
-    address: z
-        .string({ message: "location address is required" }),
-    latitude: z.number({ message: "latitude is required" }),
-    longitude: z.number({ message: "longitude is required" })
+  name: z
+    .string({ message: "location name is required" }),
+  address: z
+    .string({ message: "location address is required" }),
+  latitude: z.number({ message: "latitude is required" }),
+  longitude: z.number({ message: "longitude is required" })
 
 })
 
@@ -85,7 +114,7 @@ export const createTaskSchema = z
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    
+
     if (data.shiftEnd <= data.shiftStart) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -94,7 +123,7 @@ export const createTaskSchema = z
       });
     }
 
-    
+
     if (data.effectiveDate < todayStart) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -103,7 +132,7 @@ export const createTaskSchema = z
       });
     }
 
-    
+
     if (data.shiftStart < threeMinutesLater) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -112,10 +141,4 @@ export const createTaskSchema = z
       });
     }
   });
-export type createTaskInput =z.infer<typeof createTaskSchema>;
-
-// export const updateTaskSchema = createTaskSchema.extend({
-//   taskTemplateId: z.number()
-// });
-
-// export type updateTaskInput= z.infer<typeof updateTaskSchema>;
+export type createTaskInput = z.infer<typeof createTaskSchema>;

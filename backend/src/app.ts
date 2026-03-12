@@ -7,6 +7,7 @@ import { ApiError } from "./utils/ApiError.js";
 import "./cron/taskScheduler.js";
 import "./cron/taskStatusCron.js";
 import "./cron/attendanceCron.js";
+import { runStartupCron } from "./cron/startupCron.js";
 
 
 
@@ -49,8 +50,9 @@ app.use((err: Errback, req: Request, res: Response, next: NextFunction) => {
     res.status(500).json({ message: "Something went wrong" });
 });
 
-app.listen(process.env.PORT, () => {
+app.listen(process.env.PORT, async () => {
     console.log(`Server is listening at port ${process.env.PORT}`);
+    await runStartupCron();
 });
 
 export default app;

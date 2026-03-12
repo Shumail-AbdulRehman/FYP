@@ -94,7 +94,7 @@ export const createStaff = async (req: Request, res: Response) => {
     throw new ApiError(400, "Validation failed", errors);
   }
 
-  const { name, email, password, locationId } = result.data;
+  const { name, email, password, locationId, shiftStart, shiftEnd } = result.data;
 
   const existingStaff = await prisma.staff.findUnique({ where: { email } });
   if (existingStaff) throw new ApiError(409, "Staff with this email already exists");
@@ -114,7 +114,10 @@ export const createStaff = async (req: Request, res: Response) => {
       email,
       password: hashedPassword,
       companyId: req.user!.companyId,
-      locationId: locationId || null
+      locationId: locationId || null,
+      // Fix #10: optionally set shift at creation time
+      shiftStart: shiftStart || null,
+      shiftEnd: shiftEnd || null,
     }
   });
 
