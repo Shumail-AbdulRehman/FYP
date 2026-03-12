@@ -92,6 +92,7 @@ model TaskInstance {
   templateId  Int?
   title       String
   date        DateTime
+  lateMinutes Int? 
   shiftStart  DateTime
   shiftEnd    DateTime
   status      TaskStatus @default(PENDING)

@@ -4,6 +4,10 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { Response, Request, NextFunction, Errback } from "express";
 import { ApiError } from "./utils/ApiError.js";
+import "./cron/taskScheduler.js";
+
+
+
 
 dotenv.config();
 const app = express();
