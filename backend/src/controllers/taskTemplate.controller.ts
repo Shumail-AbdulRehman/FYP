@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createTaskSchema } from "../validations/manager.validation.js";
+import { createTaskSchema,editTaskSchema } from "../validations/manager.validation.js";
 import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -34,7 +34,7 @@ export const editTaskTemplate = async (req: Request, res: Response) => {
   const taskTemplateId = Number(req.params.id);
   if (isNaN(taskTemplateId)) throw new ApiError(400, "Invalid task template id");
 
-  const result = createTaskSchema.partial().safeParse(req.body);
+  const result = editTaskSchema.safeParse(req.body);
 
   if (!result.success) {
     const errors = result.error.issues.map(e => ({

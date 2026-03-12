@@ -105,40 +105,94 @@ export const createTaskSchema = z
     shiftEnd: z.coerce.date({ message: "Shift end is required" }),
     recurringType: z.enum(["DAILY", "ONCE"]).optional(),
     effectiveDate: z.coerce.date({ message: "Effective date is required" }),
+    recurringEndDate: z.coerce.date().optional(),
   })
   .superRefine((data, ctx) => {
     const now = new Date();
-
     const threeMinutesLater = new Date(now.getTime() + 3 * 60 * 1000);
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
+    if (data.shiftStart && data.shiftEnd) {
+      if (data.shiftEnd <= data.shiftStart) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Shift end must be after shift start",
+          path: ["shiftEnd"],
+        });
+      }
+    }
 
+    if (data.effectiveDate) {
+      if (data.effectiveDate < todayStart) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Effective date cannot be in the past",
+          path: ["effectiveDate"],
+        });
+      }
+    }
+
+    if (data.shiftStart) {
+      if (data.shiftStart < threeMinutesLater) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Shift start must be at least 3 minutes from now",
+          path: ["shiftStart"],
+        });
+      }
+    }
+  });
+
+export type createTaskInput = z.infer<typeof createTaskSchema>;
+
+
+export const editTaskSchema = createTaskSchema.partial().superRefine((data, ctx) => {
+
+  if (data.shiftStart && data.shiftEnd) {
     if (data.shiftEnd <= data.shiftStart) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "Shift end must be after shift start",
         path: ["shiftEnd"],
       });
     }
+  } else if (data.shiftStart && !data.shiftEnd) {
+    ctx.addIssue({
+      code: "custom",
+      message: "shiftEnd is required if shiftStart is provided",
+      path: ["shiftEnd"],
+    });
+  } else if (!data.shiftStart && data.shiftEnd) {
+    ctx.addIssue({
+      code: "custom",
+      message: "shiftStart is required if shiftEnd is provided",
+      path: ["shiftStart"],
+    });
+  }
 
-
-    if (data.effectiveDate < todayStart) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Effective date cannot be in the past",
-        path: ["effectiveDate"],
-      });
-    }
-
-
+  if (data.shiftStart) {
+    const now = new Date();
+    const threeMinutesLater = new Date(now.getTime() + 3 * 60 * 1000);
     if (data.shiftStart < threeMinutesLater) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "Shift start must be at least 3 minutes from now",
         path: ["shiftStart"],
       });
     }
-  });
-export type createTaskInput = z.infer<typeof createTaskSchema>;
+  }
+
+  if (data.effectiveDate) {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    if (data.effectiveDate < todayStart) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Effective date cannot be in the past",
+        path: ["effectiveDate"],
+      });
+    }
+  }
+});

@@ -73,7 +73,7 @@ export const assignShiftToStaff = async (req: Request, res: Response) => {
 };
 
 export const checkIn = async (req: Request, res: Response) => {
-    // Fix #1: Only staff can check in
+    
     if (req.user!.role !== "STAFF") {
         throw new ApiError(403, "Only staff can check in");
     }
@@ -138,8 +138,6 @@ export const checkIn = async (req: Request, res: Response) => {
     }
 
     const now = new Date();
-
-    // Fix #4: Block check-in if shift has already ended
     if (now > attendance.expectedEnd) {
         throw new ApiError(400, "Your shift has already ended for today. Check-in is no longer allowed.");
     }
@@ -172,7 +170,7 @@ export const checkIn = async (req: Request, res: Response) => {
 };
 
 export const checkOut = async (req: Request, res: Response) => {
-    // Fix #1: Only staff can check out
+    
     if (req.user!.role !== "STAFF") {
         throw new ApiError(403, "Only staff can check out");
     }
@@ -212,7 +210,6 @@ export const checkOut = async (req: Request, res: Response) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Search today's record first (normal same-day shift)
     let attendance = await prisma.attendance.findFirst({
         where: {
             staffId,
@@ -221,7 +218,6 @@ export const checkOut = async (req: Request, res: Response) => {
         },
     });
 
-    // Fix #5: If not found today, check yesterday's record (overnight shift — checked in yesterday, checking out now)
     if (!attendance) {
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
