@@ -29,7 +29,7 @@ export const editLocation = async (req: Request, res: Response) => {
   const locationId = Number(req.params.id);
   if (isNaN(locationId)) throw new ApiError(400, "Invalid location id");
 
-  const result = createLocationSchema.partial().safeParse(req.body);
+  const result = createLocationSchema.safeParse(req.body);
 
   if (!result.success) {
     const errors = result.error.issues.map(e => ({
@@ -87,7 +87,7 @@ export const softDeleteLocation = async (req: Request, res: Response) => {
     prisma.taskInstance.updateMany({
       where: {
         locationId,
-        status: { in: ["PENDING", "IN_PROGRESS"] }
+        status: { in: ["PENDING", "IN_PROGRESS", "LATE"] }
       },
       data: { status: "CANCELLED", isActive: false }
     }),

@@ -150,13 +150,15 @@ export const checkIn = async (req: Request, res: Response) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const attendance = await prisma.attendance.findFirst({
-        where: {
-            staffId,
-            date: { gte: today, lt: tomorrow },
-            status: "ABSENT",
-        },
-    });
+    const now = new Date();
+
+const attendance = await prisma.attendance.findFirst({
+  where: {
+    staffId,
+    expectedStart: { lte: now },
+    expectedEnd: { gte: now },
+  },
+});
 
     if (!attendance) {
         const alreadyCheckedIn = await prisma.attendance.findFirst({
@@ -174,7 +176,7 @@ export const checkIn = async (req: Request, res: Response) => {
         throw new ApiError(404, "No attendance record found for today");
     }
 
-    const now = new Date();
+    
     if (now > attendance.expectedEnd) {
         throw new ApiError(400, "Your shift has already ended for today. Check-in is no longer allowed.");
     }
