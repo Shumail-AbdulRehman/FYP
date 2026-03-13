@@ -89,7 +89,7 @@ export const softDeleteLocation = async (req: Request, res: Response) => {
         locationId,
         status: { in: ["PENDING", "IN_PROGRESS"] }
       },
-      data: { status: "MISSED", isActive: false }
+      data: { status: "CANCELLED", isActive: false }
     }),
     prisma.staff.updateMany({
       where: { locationId },

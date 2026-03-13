@@ -155,5 +155,6 @@ enum TaskStatus {
   COMPLETED
   LATE
   MISSED
+  CANCELLED
 }
 
