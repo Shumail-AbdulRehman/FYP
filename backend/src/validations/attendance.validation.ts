@@ -14,8 +14,7 @@ export const checkOutSchema = z.object({
 
 export type CheckOutInput = z.infer<typeof checkOutSchema>;
 
-export const assignShiftSchema = z
-    .object({
+export const assignShiftSchema = z.object({
         shiftStart: z.coerce.date({ message: "Shift start time is required" }),
         shiftEnd: z.coerce.date({ message: "Shift end time is required" }),
     })

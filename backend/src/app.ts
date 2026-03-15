@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { Response, Request, NextFunction } from "express";
 import { ApiError } from "./utils/ApiError.js";
-import "./cron/taskScheduler.js";
+import "./cron/dailyTaskScheduler.js";
 import "./cron/taskStatusCron.js";
 import "./cron/attendanceCron.js";
 import { runStartupCron } from "./cron/startupCron.js";
