@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createTaskSchema,editTaskSchema } from "../validations/manager.validation.js";
+import { createTaskSchema,editTaskSchema } from "../validations/taskTemplate.validation.js";
 import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";

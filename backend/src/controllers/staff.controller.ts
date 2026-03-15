@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createStaffSchema } from "../validations/manager.validation.js";
+import { createStaffSchema } from "../validations/staff.validation.js";
 import { staffLoginSchema } from "../validations/staff.validation.js";
 import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
