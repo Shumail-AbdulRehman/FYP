@@ -254,7 +254,7 @@ export const checkOut = async (req: Request, res: Response) => {
             staffId,
             date: { gte: today, lt: tomorrow },
             status: { in: ["CHECKED_IN", "LATE"] },
-        },
+        },  
     });
 
     if (!attendance) {

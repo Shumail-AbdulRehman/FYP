@@ -11,5 +11,6 @@ router.post("/staff-logout", verifyJwt, logoutStaff);
 router.post("/create-staff", verifyJwt, authorize, createStaff);
 router.get("/", verifyJwt, authorize, getStaff);
 router.patch("/:id/deactivate", verifyJwt, authorize, softDeleteStaff);
+// router.patch("/:id/active",verifyJwt,authorize)
 
 export default router;

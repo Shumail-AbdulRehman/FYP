@@ -164,10 +164,28 @@ export const softDeleteStaff = async (req: Request, res: Response) => {
     throw new ApiError(400, "Staff is already deactivated");
   }
 
-  await prisma.staff.update({
+  // await prisma.staff.update({
+  //   where: { id: staffId },
+  //   data: { isActive: false, refreshToken: null }
+  // });
+
+await prisma.$transaction([
+  prisma.staff.update({
     where: { id: staffId },
-    data: { isActive: false, refreshToken: null }
-  });
+    data: { isActive: false, refreshToken: null },
+  }),
+  prisma.taskTemplate.updateMany({
+    where: { staffId, isActive: true },
+    data: { staffId: null },
+  }),
+  prisma.taskInstance.updateMany({
+    where: {
+      staffId,
+      status: { in: ["PENDING", "IN_PROGRESS"] }, 
+    },
+    data: { status:"CANCELLED" }, 
+  }),
+]);
 
   res.status(200).json(new ApiResponse(200, {}, "Staff deactivated successfully"));
 };
