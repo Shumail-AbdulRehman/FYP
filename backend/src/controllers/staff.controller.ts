@@ -6,6 +6,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { generateAccessToken, generateRefreshToken, isPasswordCorrect } from "../utils/auth.js";
 
+
 export const loginStaff = async (req: Request, res: Response) => {
   const result = staffLoginSchema.safeParse(req.body);
 
@@ -188,4 +189,32 @@ await prisma.$transaction([
 ]);
 
   res.status(200).json(new ApiResponse(200, {}, "Staff deactivated successfully"));
+};
+
+export const getStaffById = async (req: Request, res: Response) => {
+  const staffId = Number(req.params.id);
+  if (isNaN(staffId)) throw new ApiError(400, "Invalid staff id");
+
+  const staff = await prisma.staff.findUnique({
+    where: { id: staffId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      isActive: true,
+      companyId: true,
+      locationId: true,
+      createdAt: true,
+      updatedAt: true,
+      shiftStart:true,
+      shiftEnd:true
+    }
+  });
+
+  if (!staff || staff.companyId !== req.user!.companyId) {
+    throw new ApiError(404, "Staff not found in your company");
+  }
+
+  res.status(200).json(new ApiResponse(200, staff, "Staff fetched successfully"));
 };
