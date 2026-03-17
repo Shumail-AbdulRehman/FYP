@@ -99,3 +99,16 @@ export const softDeleteLocation = async (req: Request, res: Response) => {
 
   res.status(200).json(new ApiResponse(200, {}, "Location deactivated successfully"));
 };
+
+export const getLocation = async (req: Request, res: Response) => {
+  const locationId = Number(req.params.id);
+  if (isNaN(locationId)) throw new ApiError(400, "Invalid location id");
+  const location = await prisma.location.findUnique({
+    where: { id: locationId },
+  });
+  
+  if (!location || location.companyId !== req.user!.companyId) {
+    throw new ApiError(404, "Location not found in your company");
+  }
+  res.status(200).json(new ApiResponse(200, location, "Location fetched successfully"));
+};
