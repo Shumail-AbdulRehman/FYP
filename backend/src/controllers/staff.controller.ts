@@ -218,3 +218,33 @@ export const getStaffById = async (req: Request, res: Response) => {
 
   res.status(200).json(new ApiResponse(200, staff, "Staff fetched successfully"));
 };
+
+export const getStaffByLocation = async (req: Request, res: Response) => {
+  const locationId = Number(req.params.locationId);
+  if (isNaN(locationId)) throw new ApiError(400, "Invalid location id");
+
+  const location = await prisma.location.findUnique({ where: { id: locationId } });
+
+  if (!location || location.companyId !== req.user!.companyId) {
+    throw new ApiError(404, "Location not found in your company");
+  }
+
+  const staff = await prisma.staff.findMany({
+    where: { companyId: req.user!.companyId, locationId, isActive: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      isActive: true,
+      companyId: true,
+      locationId: true,
+      createdAt: true,
+      updatedAt: true,
+      shiftStart:true,
+      shiftEnd:true
+    }
+  });
+
+  res.status(200).json(new ApiResponse(200, staff, "Staff fetched successfully"));
+};
