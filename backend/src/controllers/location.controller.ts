@@ -100,7 +100,7 @@ export const softDeleteLocation = async (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, {}, "Location deactivated successfully"));
 };
 
-export const getLocation = async (req: Request, res: Response) => {
+export const getLocationById = async (req: Request, res: Response) => {
   const locationId = Number(req.params.id);
   if (isNaN(locationId)) throw new ApiError(400, "Invalid location id");
   const location = await prisma.location.findUnique({
@@ -121,4 +121,24 @@ export const getInactiveLocations = async (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, locations, "Inactive locations fetched successfully"));
 };
 
-  
+export const restoreLocation = async (req: Request, res: Response) => {
+  const locationId = Number(req.params.id);
+  if (isNaN(locationId)) throw new ApiError(400, "Invalid location id");
+
+  const location = await prisma.location.findUnique({ where: { id: locationId } });
+
+  if (!location || location.companyId !== req.user!.companyId) {
+    throw new ApiError(404, "Location not found in your company");
+  }
+
+  if (location.isActive) {
+    throw new ApiError(400, "Location is already active");
+  }
+
+  await prisma.location.update({
+    where: { id: locationId },
+    data: { isActive: true }
+   });
+
+  res.status(200).json(new ApiResponse(200, {}, "Location restored successfully"));
+};
