@@ -5,6 +5,8 @@ import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { generateAccessToken, generateRefreshToken, isPasswordCorrect } from "../utils/auth.js";
+import jwt from "jsonwebtoken";
+import { TokenPayload } from "../types/jwt.js";
 
 
 export const loginStaff = async (req: Request, res: Response) => {
@@ -268,4 +270,53 @@ export const getInactiveStaff = async (req: Request, res: Response) => {
   });
 
   res.status(200).json(new ApiResponse(200, staff, "Inactive staff fetched successfully"));
+};
+
+export const refreshStaffToken = async (req: Request, res: Response) => {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+        throw new ApiError(401, "Refresh token missing");
+    }
+
+    let decodedToken: TokenPayload;
+try {
+    decodedToken = jwt.verify(
+        refreshToken, 
+        process.env.REFRESH_TOKEN_SECRET!
+    ) as TokenPayload;
+} catch (error) {
+    throw new ApiError(401, "Refresh token expired or invalid");
+}
+
+if (decodedToken.id !== req.user!.id) {  
+    throw new ApiError(401, "Token mismatch");
+}
+
+    const staff = await prisma.staff.findUnique({
+        where: { id: req.user!.id, refreshToken }
+    });
+
+    if (!staff || staff.role !== "STAFF") {
+        throw new ApiError(401, "Unauthorized");
+    }
+
+    const accessToken = generateAccessToken(staff, staff.role);
+    const newRefreshToken = generateRefreshToken(staff);
+
+    await prisma.staff.update({
+        where: { id: staff.id },
+        data: { refreshToken: newRefreshToken }
+    });
+
+    const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production"
+    };
+
+    res
+        .status(200)
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", newRefreshToken, cookieOptions)
+        .json(new ApiResponse(200, {}, "Token refreshed successfully"));
 };

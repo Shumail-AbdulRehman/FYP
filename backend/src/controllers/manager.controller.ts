@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-
+import jwt from "jsonwebtoken";
 import {
     managerSignupSchema,
     managerLoginSchema,
@@ -8,6 +8,9 @@ import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { generateAccessToken, generateRefreshToken, isPasswordCorrect } from "../utils/auth.js";
+import { TokenPayload } from "../types/jwt.js";
+
+
 
 export const signupManager = async (req: Request, res: Response) => {
 
@@ -184,12 +187,27 @@ export const refreshManagerToken = async (req: Request, res: Response) => {
         throw new ApiError(401, "Refresh token missing");
     }
 
+    let decodedToken: TokenPayload;
+try {
+    decodedToken = jwt.verify(
+        refreshToken, 
+        process.env.REFRESH_TOKEN_SECRET!
+    ) as TokenPayload;
+} catch (error) {
+    throw new ApiError(401, "Refresh token expired or invalid");
+}
+
+if (decodedToken.id !== req.user!.id) {  
+    throw new ApiError(401, "Token mismatch");
+}
+
     const manager = await prisma.manager.findUnique({
         where: { id: req.user!.id, refreshToken }
     });
 
-    if (!manager) {
-        throw new ApiError(401, "Invalid refresh token");
+   
+    if (!manager || manager.role !== "MANAGER") {
+        throw new ApiError(401, "Unauthorized");
     }
 
     const accessToken = generateAccessToken(manager, manager.role);
@@ -211,4 +229,3 @@ export const refreshManagerToken = async (req: Request, res: Response) => {
         .cookie("refreshToken", newRefreshToken, cookieOptions)
         .json(new ApiResponse(200, {}, "Token refreshed successfully"));
 };
-
