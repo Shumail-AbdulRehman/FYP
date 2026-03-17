@@ -124,3 +124,30 @@ export const getTaskTemplate=async (req:Request, res: Response)=>
   );
 
 };
+
+export const getTaskTemplatesByLocation=async (req:Request, res: Response)=>
+{
+  const locationId=Number(req.params.locationId);
+
+  if(isNaN(locationId)) throw new ApiError(400, "Invalid location id");
+
+  const location=await prisma.location.findUnique({
+    where:{id:locationId}
+  });
+
+  if(!location) throw new ApiError(404,"Location not found");
+
+  if(location.companyId !== req.user?.companyId) throw new ApiError(404,"Location not found in your company");
+
+  const taskTemplates=await prisma.taskTemplate.findMany({
+    where:{
+      locationId,
+      isActive:true
+    }
+  });
+
+  res.status(200).json(
+    new ApiResponse(200,taskTemplates,"Task templates fetched successfully")
+  );  
+};
+
