@@ -112,3 +112,13 @@ export const getLocation = async (req: Request, res: Response) => {
   }
   res.status(200).json(new ApiResponse(200, location, "Location fetched successfully"));
 };
+
+export const getInactiveLocations = async (req: Request, res: Response) => {
+  const locations = await prisma.location.findMany({
+    where: { companyId: req.user!.companyId, isActive: false }
+  });
+
+  res.status(200).json(new ApiResponse(200, locations, "Inactive locations fetched successfully"));
+};
+
+  
