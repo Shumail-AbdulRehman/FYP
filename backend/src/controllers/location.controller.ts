@@ -142,3 +142,36 @@ export const restoreLocation = async (req: Request, res: Response) => {
 
   res.status(200).json(new ApiResponse(200, {}, "Location restored successfully"));
 };
+
+export const getTodaysLocationStatsById = async (req: Request, res: Response) => {
+  const locationId = Number(req.params.id);
+  if (isNaN(locationId)) throw new ApiError(400, "Invalid location id");
+
+  const location = await prisma.location.findUnique({ where: { id: locationId } });
+
+  if (!location || location.companyId !== req.user!.companyId) {
+    throw new ApiError(404, "Location not found in your company");
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const tasks = await prisma.taskInstance.findMany({
+  where: {
+    locationId,
+    date: { gte: today},
+    isActive: true
+  }
+});
+
+const stats = {
+  pending: tasks.filter(t => t.status === "PENDING").length,
+  inProgress: tasks.filter(t => t.status === "IN_PROGRESS").length,
+  completed: tasks.filter(t => t.status === "COMPLETED").length,
+  missed: tasks.filter(t => t.status === "MISSED").length,
+  cancelled: tasks.filter(t => t.status === "CANCELLED").length,
+  late: tasks.filter(t => t.status === "LATE").length
+};
+
+  res.status(200).json(new ApiResponse(200, stats, "Today's location stats fetched successfully"));
+};
