@@ -154,3 +154,61 @@ export const logoutManager = async (req: Request, res: Response) => {
         .status(200)
         .json(new ApiResponse(200, {}, "Manager logged out successfully"));
 };
+
+export const getManagerProfile = async (req: Request, res: Response) => {
+
+    if (req.user!.role !== "MANAGER") throw new ApiError(403, "Only managers can use this endpoint");
+
+    const manager = await prisma.manager.findUnique({
+        where: { id: req.user!.id },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            companyId: true
+        }
+    });
+
+    if (!manager) {
+        throw new ApiError(404, "Manager not found");
+    }
+
+    res.status(200).json(new ApiResponse(200, manager, "Manager profile fetched successfully"));
+};
+
+export const refreshManagerToken = async (req: Request, res: Response) => {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+        throw new ApiError(401, "Refresh token missing");
+    }
+
+    const manager = await prisma.manager.findUnique({
+        where: { id: req.user!.id, refreshToken }
+    });
+
+    if (!manager) {
+        throw new ApiError(401, "Invalid refresh token");
+    }
+
+    const accessToken = generateAccessToken(manager, manager.role);
+    const newRefreshToken = generateRefreshToken(manager);
+
+    await prisma.manager.update({
+        where: { id: manager.id },
+        data: { refreshToken: newRefreshToken }
+    });
+
+    const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production"
+    };
+
+    res
+        .status(200)
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", newRefreshToken, cookieOptions)
+        .json(new ApiResponse(200, {}, "Token refreshed successfully"));
+};
+
