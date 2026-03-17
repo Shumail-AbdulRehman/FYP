@@ -143,35 +143,76 @@ export const restoreLocation = async (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, {}, "Location restored successfully"));
 };
 
-export const getTodaysLocationStatsById = async (req: Request, res: Response) => {
+export const getLocationStatsById = async (req: Request, res: Response) => {
   const locationId = Number(req.params.id);
   if (isNaN(locationId)) throw new ApiError(400, "Invalid location id");
 
   const location = await prisma.location.findUnique({ where: { id: locationId } });
-
   if (!location || location.companyId !== req.user!.companyId) {
     throw new ApiError(404, "Location not found in your company");
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  
+  const days = req.query.days ? Number(req.query.days) : null;
+  const dateFromParam = req.query.dateFrom as string;
+  const dateToParam = req.query.dateTo as string;
+
+  let dateFilter = {};
+  let periodLabel = "All time";
+
+  
+  if (dateFromParam && dateToParam) {
+    
+    const startDate = new Date(dateFromParam);
+    const endDate = new Date(dateToParam);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new ApiError(400, "Invalid dateFrom or dateTo format. Use YYYY-MM-DD");
+    }
+
+    if (startDate > endDate) {
+      throw new ApiError(400, "dateFrom must be before dateTo");
+    }
+
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    dateFilter = { date: { gte: startDate, lte: endDate } };
+    const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    periodLabel = `${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]} (${diffDays} days)`;
+  } else if (days) {
+    
+    if (isNaN(days) || days <= 0) {
+      throw new ApiError(400, "days must be a positive number");
+    }
+
+    const endDate = new Date();
+    endDate.setHours(23, 59, 59, 999);
+    const startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    dateFilter = { date: { gte: startDate, lte: endDate } };
+    periodLabel = `Last ${days} days`;
+  }
 
   const tasks = await prisma.taskInstance.findMany({
-  where: {
-    locationId,
-    date: { gte: today},
-    isActive: true
-  }
-});
+    where: { locationId, isActive: true, ...dateFilter }
+  });
 
-const stats = {
-  pending: tasks.filter(t => t.status === "PENDING").length,
-  inProgress: tasks.filter(t => t.status === "IN_PROGRESS").length,
-  completed: tasks.filter(t => t.status === "COMPLETED").length,
-  missed: tasks.filter(t => t.status === "MISSED").length,
-  cancelled: tasks.filter(t => t.status === "CANCELLED").length,
-  late: tasks.filter(t => t.status === "LATE").length
-};
+  const stats = {
+    period: periodLabel,
+    total: tasks.length,
+    pending: tasks.filter(t => t.status === "PENDING").length,
+    inProgress: tasks.filter(t => t.status === "IN_PROGRESS").length,
+    completed: tasks.filter(t => t.status === "COMPLETED").length,
+    missed: tasks.filter(t => t.status === "MISSED").length,
+    cancelled: tasks.filter(t => t.status === "CANCELLED").length,
+    late: tasks.filter(t => t.status === "LATE").length,
+    completionRate: tasks.length > 0 
+      ? Math.round((tasks.filter(t => t.status === "COMPLETED").length / tasks.length) * 100) 
+      : 0
+  };
 
-  res.status(200).json(new ApiResponse(200, stats, "Today's location stats fetched successfully"));
+  res.status(200).json(new ApiResponse(200, stats, "Location stats fetched successfully"));
 };
