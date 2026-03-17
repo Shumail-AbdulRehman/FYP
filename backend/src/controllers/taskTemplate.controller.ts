@@ -98,3 +98,29 @@ export const deleteTaskTemplate = async (req: Request, res: Response) => {
 
   res.status(200).json(new ApiResponse(200, {}, "Task template deleted successfully"));
 };
+
+export const getTaskTemplate=async (req:Request, res: Response)=>
+{
+  const templateId=Number(req.params.id);
+
+  if(isNaN(templateId)) throw new ApiError(400, "Invalid task template id");
+
+  const taskTemplate=await prisma.taskTemplate.findFirst({
+    where:{
+      id:templateId,
+      isActive:true
+    },
+    include:{
+      location:true
+    }
+  });
+
+  if(!taskTemplate) throw new ApiError(404,"task template not found");
+
+  if(taskTemplate.location.companyId !== req.user?.companyId) throw new ApiError(404,"task tenplate not found in your company");
+
+  res.status(200).json(
+    new ApiResponse(200,taskTemplate,"task template fetched successfully")
+  );
+
+};
