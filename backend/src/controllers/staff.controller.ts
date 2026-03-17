@@ -248,3 +248,24 @@ export const getStaffByLocation = async (req: Request, res: Response) => {
 
   res.status(200).json(new ApiResponse(200, staff, "Staff fetched successfully"));
 };
+
+export const getInactiveStaff = async (req: Request, res: Response) => {
+  const staff = await prisma.staff.findMany({
+    where: { companyId: req.user!.companyId, isActive: false },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      isActive: true,
+      companyId: true,
+      locationId: true,
+      createdAt: true,
+      updatedAt: true,
+      shiftStart:true,
+      shiftEnd:true
+    }
+  });
+
+  res.status(200).json(new ApiResponse(200, staff, "Inactive staff fetched successfully"));
+};
