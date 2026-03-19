@@ -6,10 +6,10 @@ cron.schedule("0 0 * * *", async () => {
         console.log("Creating daily attendance records...");
 
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setUTCHours(0, 0, 0, 0);
 
         const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
         const eligibleStaff = await prisma.staff.findMany({
             where: {
@@ -39,23 +39,23 @@ cron.schedule("0 0 * * *", async () => {
             if (existingAttendance) continue;
 
             const expectedStart = new Date(today);
-            expectedStart.setHours(
-                staff.shiftStart!.getHours(),
-                staff.shiftStart!.getMinutes(),
-                staff.shiftStart!.getSeconds(),
+            expectedStart.setUTCHours(
+                staff.shiftStart!.getUTCHours(),
+                staff.shiftStart!.getUTCMinutes(),
+                staff.shiftStart!.getUTCSeconds(),
                 0
             );
 
             const expectedEnd = new Date(today);
-            expectedEnd.setHours(
-                staff.shiftEnd!.getHours(),
-                staff.shiftEnd!.getMinutes(),
-                staff.shiftEnd!.getSeconds(),
+            expectedEnd.setUTCHours(
+                staff.shiftEnd!.getUTCHours(),
+                staff.shiftEnd!.getUTCMinutes(),
+                staff.shiftEnd!.getUTCSeconds(),
                 0
             );
 
             if (expectedEnd <= expectedStart) {
-                expectedEnd.setDate(expectedEnd.getDate() + 1);
+                expectedEnd.setUTCDate(expectedEnd.getUTCDate() + 1);
             }
 
             await prisma.attendance.create({

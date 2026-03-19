@@ -23,9 +23,27 @@ export const assignStaffToLocation = async (req: Request, res: Response) => {
     throw new ApiError(404, "Location not found in your company");
   }
 
+  if (staff.locationId && staff.locationId !== locationId) {
+    await prisma.$transaction([
+      prisma.taskTemplate.updateMany({
+        where: { staffId, locationId: staff.locationId, isActive: true },
+        data: { staffId: null },
+      }),
+      prisma.taskInstance.updateMany({
+        where: {
+          staffId,
+          locationId: staff.locationId,
+          status: { in: ["PENDING", "IN_PROGRESS"] },
+        },
+        data: { staffId: null },
+      }),
+    ]);
+  }
+
   const updated = await prisma.staff.update({
     where: { id: staffId },
-    data: { locationId }
+    data: { locationId },
+    select: { id: true, name: true, email: true, role: true, locationId: true, companyId: true }
   });
 
   res.status(200).json(new ApiResponse(200, updated, "Staff assigned to location successfully"));
@@ -63,10 +81,10 @@ export const assignStaffToTaskTemplate = async (req: Request, res: Response) => 
   }
 
   if (staff.shiftStart && staff.shiftEnd) {
-    const staffStartMin = staff.shiftStart.getHours() * 60 + staff.shiftStart.getMinutes();
-    const staffEndMin = staff.shiftEnd.getHours() * 60 + staff.shiftEnd.getMinutes();
-    const taskStartMin = template.shiftStart.getHours() * 60 + template.shiftStart.getMinutes();
-    const taskEndMin = template.shiftEnd.getHours() * 60 + template.shiftEnd.getMinutes();
+    const staffStartMin = staff.shiftStart.getUTCHours() * 60 + staff.shiftStart.getUTCMinutes();
+    const staffEndMin = staff.shiftEnd.getUTCHours() * 60 + staff.shiftEnd.getUTCMinutes();
+    const taskStartMin = template.shiftStart.getUTCHours() * 60 + template.shiftStart.getUTCMinutes();
+    const taskEndMin = template.shiftEnd.getUTCHours() * 60 + template.shiftEnd.getUTCMinutes();
 
    
     const isOvernightShift = staffEndMin < staffStartMin;

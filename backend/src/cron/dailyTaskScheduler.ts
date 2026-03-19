@@ -6,10 +6,10 @@ cron.schedule("0 0 * * *", async () => {
     console.log("Generating daily task instances...");
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
 
     const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
     const dailyTemplates = await prisma.taskTemplate.findMany({
       where: {
@@ -39,23 +39,23 @@ cron.schedule("0 0 * * *", async () => {
       if (existingInstance) continue;
 
       const shiftStart = new Date(today);
-      shiftStart.setHours(
-        template.shiftStart.getHours(),
-        template.shiftStart.getMinutes(),
-        template.shiftStart.getSeconds(),
+      shiftStart.setUTCHours(
+        template.shiftStart.getUTCHours(),
+        template.shiftStart.getUTCMinutes(),
+        template.shiftStart.getUTCSeconds(),
         0
       );
 
       const shiftEnd = new Date(today);
-      shiftEnd.setHours(
-        template.shiftEnd.getHours(),
-        template.shiftEnd.getMinutes(),
-        template.shiftEnd.getSeconds(),
+      shiftEnd.setUTCHours(
+        template.shiftEnd.getUTCHours(),
+        template.shiftEnd.getUTCMinutes(),
+        template.shiftEnd.getUTCSeconds(),
         0
       );
 
       if (shiftEnd <= shiftStart) {
-        shiftEnd.setDate(shiftEnd.getDate() + 1);
+        shiftEnd.setUTCDate(shiftEnd.getUTCDate() + 1);
       }
 
       await prisma.taskInstance.create({

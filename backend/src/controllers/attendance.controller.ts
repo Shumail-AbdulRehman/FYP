@@ -6,6 +6,8 @@ import { checkInSchema, checkOutSchema, assignShiftSchema } from "../validations
 import { isWithinRadius } from "../utils/geofencing.js";
 
 const LATE_GRACE_MINUTES = 15;
+const EARLY_CHECKIN_MINUTES = 30;
+const MIN_CHECKOUT_MINUTES = 30;
 
 export const assignShiftToStaff = async (req: Request, res: Response) => {
     const staffId = Number(req.params.id);
@@ -32,10 +34,10 @@ export const assignShiftToStaff = async (req: Request, res: Response) => {
     }
 
     const newShiftStartMin =
-        result.data.shiftStart.getHours() * 60 + result.data.shiftStart.getMinutes();
+        result.data.shiftStart.getUTCHours() * 60 + result.data.shiftStart.getUTCMinutes();
 
     const newShiftEndMin =
-        result.data.shiftEnd.getHours() * 60 + result.data.shiftEnd.getMinutes();
+        result.data.shiftEnd.getUTCHours() * 60 + result.data.shiftEnd.getUTCMinutes();
 
     const activeTemplates = await prisma.taskTemplate.findMany({
         where: { staffId, isActive: true },
@@ -61,18 +63,18 @@ export const assignShiftToStaff = async (req: Request, res: Response) => {
 
     const conflicts = activeTemplates.filter(t => {
         const taskStart =
-            t.shiftStart.getHours() * 60 + t.shiftStart.getMinutes();
+            t.shiftStart.getUTCHours() * 60 + t.shiftStart.getUTCMinutes();
 
         const taskEnd =
-            t.shiftEnd.getHours() * 60 + t.shiftEnd.getMinutes();
+            t.shiftEnd.getUTCHours() * 60 + t.shiftEnd.getUTCMinutes();
 
         return !isWithinRange(taskStart, taskEnd, newShiftStartMin, newShiftEndMin);
     });
 
     if (conflicts.length > 0) {
         const formatTime = (d: Date) =>
-            `${d.getHours().toString().padStart(2, "0")}:${d
-                .getMinutes()
+            `${d.getUTCHours().toString().padStart(2, "0")}:${d
+                .getUTCMinutes()
                 .toString()
                 .padStart(2, "0")}`;
 
@@ -145,17 +147,17 @@ export const checkIn = async (req: Request, res: Response) => {
     }
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
 
     const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
     const now = new Date();
 
 const attendance = await prisma.attendance.findFirst({
   where: {
     staffId,
-    expectedStart: { lte: now },
+    expectedStart: { lte: new Date(now.getTime() + EARLY_CHECKIN_MINUTES * 60 * 1000) },
     expectedEnd: { gte: now },
   },
 });
@@ -176,11 +178,6 @@ const attendance = await prisma.attendance.findFirst({
         throw new ApiError(404, "No attendance record found for today");
     }
 
-    
-    if (now > attendance.expectedEnd) {
-        throw new ApiError(400, "Your shift has already ended for today. Check-in is no longer allowed.");
-    }
-
     const graceDeadline = new Date(attendance.expectedStart.getTime() + LATE_GRACE_MINUTES * 60 * 1000);
 
     let status: "CHECKED_IN" | "LATE";
@@ -195,8 +192,8 @@ const attendance = await prisma.attendance.findFirst({
         status = "CHECKED_IN";
     }
 
-    const updated = await prisma.attendance.update({
-        where: { id: attendance.id },
+    const { count } = await prisma.attendance.updateMany({
+        where: { id: attendance.id, status: "ABSENT" },
         data: {
             checkInTime: now,
             status,
@@ -204,6 +201,12 @@ const attendance = await prisma.attendance.findFirst({
             lateMinutes,
         },
     });
+
+    if (count === 0) {
+        throw new ApiError(400, "You have already checked in for this shift");
+    }
+
+    const updated = await prisma.attendance.findUnique({ where: { id: attendance.id } });
 
     res.status(200).json(new ApiResponse(200, updated, `Checked in successfully${isLateCheckIn ? ` (late by ${lateMinutes} minutes)` : ""}`));
 };
@@ -244,10 +247,10 @@ export const checkOut = async (req: Request, res: Response) => {
     }
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
 
     const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
     let attendance = await prisma.attendance.findFirst({
         where: {
@@ -259,7 +262,7 @@ export const checkOut = async (req: Request, res: Response) => {
 
     if (!attendance) {
         const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setUTCDate(yesterday.getUTCDate() - 1);
 
         attendance = await prisma.attendance.findFirst({
             where: {
@@ -275,6 +278,13 @@ export const checkOut = async (req: Request, res: Response) => {
     }
 
     const now = new Date();
+
+    if (attendance.checkInTime) {
+        const minutesSinceCheckIn = Math.floor((now.getTime() - attendance.checkInTime.getTime()) / (1000 * 60));
+        if (minutesSinceCheckIn < MIN_CHECKOUT_MINUTES) {
+            throw new ApiError(400, `Cannot check out within ${MIN_CHECKOUT_MINUTES} minutes of check-in. Please wait ${MIN_CHECKOUT_MINUTES - minutesSinceCheckIn} more minute(s).`);
+        }
+    }
 
     const updated = await prisma.attendance.update({
         where: { id: attendance.id },

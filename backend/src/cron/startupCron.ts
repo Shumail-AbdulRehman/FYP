@@ -4,10 +4,10 @@ import { prisma } from "../prisma/prisma.js";
 export async function runStartupCron(): Promise<void> {
     try {
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        today.setUTCHours(0, 0, 0, 0);
 
         const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
        
 
@@ -39,23 +39,23 @@ export async function runStartupCron(): Promise<void> {
             if (existing) continue;
 
             const expectedStart = new Date(today);
-            expectedStart.setHours(
-                staff.shiftStart!.getHours(),
-                staff.shiftStart!.getMinutes(),
-                staff.shiftStart!.getSeconds(),
+            expectedStart.setUTCHours(
+                staff.shiftStart!.getUTCHours(),
+                staff.shiftStart!.getUTCMinutes(),
+                staff.shiftStart!.getUTCSeconds(),
                 0
             );
 
             const expectedEnd = new Date(today);
-            expectedEnd.setHours(
-                staff.shiftEnd!.getHours(),
-                staff.shiftEnd!.getMinutes(),
-                staff.shiftEnd!.getSeconds(),
+            expectedEnd.setUTCHours(
+                staff.shiftEnd!.getUTCHours(),
+                staff.shiftEnd!.getUTCMinutes(),
+                staff.shiftEnd!.getUTCSeconds(),
                 0
             );
 
             if (expectedEnd <= expectedStart) {
-                expectedEnd.setDate(expectedEnd.getDate() + 1);
+                expectedEnd.setUTCDate(expectedEnd.getUTCDate() + 1);
             }
 
             await prisma.attendance.create({
@@ -107,23 +107,23 @@ export async function runStartupCron(): Promise<void> {
             if (existing) continue;
 
             const shiftStart = new Date(today);
-            shiftStart.setHours(
-                template.shiftStart.getHours(),
-                template.shiftStart.getMinutes(),
-                template.shiftStart.getSeconds(),
+            shiftStart.setUTCHours(
+                template.shiftStart.getUTCHours(),
+                template.shiftStart.getUTCMinutes(),
+                template.shiftStart.getUTCSeconds(),
                 0
             );
 
             const shiftEnd = new Date(today);
-            shiftEnd.setHours(
-                template.shiftEnd.getHours(),
-                template.shiftEnd.getMinutes(),
-                template.shiftEnd.getSeconds(),
+            shiftEnd.setUTCHours(
+                template.shiftEnd.getUTCHours(),
+                template.shiftEnd.getUTCMinutes(),
+                template.shiftEnd.getUTCSeconds(),
                 0
             );
 
             if (shiftEnd <= shiftStart) {
-                shiftEnd.setDate(shiftEnd.getDate() + 1);
+                shiftEnd.setUTCDate(shiftEnd.getUTCDate() + 1);
             }
 
             await prisma.taskInstance.create({
