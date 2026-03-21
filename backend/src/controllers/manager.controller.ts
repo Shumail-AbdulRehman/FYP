@@ -230,7 +230,6 @@ if (decodedToken.id !== req.user!.id) {
         .json(new ApiResponse(200, {}, "Token refreshed successfully"));
 };
 
-
 export const getTasknstancesOfLocation = async (req: Request, res: Response) => {
 
     const locationId = Number(req.params.locationId);
@@ -268,3 +267,5 @@ export const getTasknstancesOfLocation = async (req: Request, res: Response) => 
 
     res.status(200).json(new ApiResponse(200, tasks, "Task instances fetched successfully"));
 };
+
+
