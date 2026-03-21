@@ -147,6 +147,28 @@ export const completeTask = async (req: Request, res: Response) => {
     });
 
     res.status(200).json(new ApiResponse(200, taskCompleted, "Task completed successfully"));
-    
+
 
 }
+
+export const getTaskInstanceById = async (req: Request, res: Response) => {
+    const taskId = Number(req.params.taskId);
+
+    if (isNaN(taskId)) {
+        throw new ApiError(400, "Invalid task id");
+    }
+
+    const task= await prisma.taskInstance.findUnique({
+        where: {id: taskId, isActive:true},
+    });
+
+    if (!task || task.staffId !== req.user!.id) {
+        throw new ApiError(404, "Task not found for this staff");
+    }
+
+    res.status(200).json(new ApiResponse(200, task, "Task fetched successfully"));  
+
+  };
+
+  
+
