@@ -320,3 +320,29 @@ if (decodedToken.id !== req.user!.id) {
         .cookie("refreshToken", newRefreshToken, cookieOptions)
         .json(new ApiResponse(200, {}, "Token refreshed successfully"));
 };
+
+export const getProfile = async (req: Request, res: Response) => {
+    const staff = await prisma.staff.findUnique({
+        where: { id: req.user!.id },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            isActive: true,
+            companyId: true,
+            locationId: true,
+            createdAt: true,
+            updatedAt: true,
+            shiftStart:true,
+            shiftEnd:true
+        }
+    });
+
+    if (!staff) {
+        throw new ApiError(404, "Staff not found");
+    }
+
+    res.status(200).json(new ApiResponse(200, staff, "Profile fetched successfully"));
+};
+
