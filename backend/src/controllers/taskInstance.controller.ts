@@ -110,3 +110,43 @@ export const startTask = async (req: Request, res: Response) => {
 
     res.status(200).json(new ApiResponse(200, taskStarted, "Task started successfully"));
 }
+
+export const completeTask = async (req: Request, res: Response) => {
+
+    const taskId = Number(req.params.taskId);
+
+    if (isNaN(taskId)) {
+        throw new ApiError(400, "Invalid task id");
+    }
+
+    const task= await prisma.taskInstance.findUnique({
+        where: {id: taskId, isActive:true}
+    });
+
+    if (!task || task.staffId !== req.user!.id) {
+        throw new ApiError(404, "Task not found for this staff");
+    }
+    
+    if (task.status !== "IN_PROGRESS") {
+        throw new ApiError(400, "Only in-progress tasks can be completed");
+    }
+
+    const now =new Date();
+
+    if(task.shiftEnd <= now) 
+    {
+        throw new ApiError(400, "Task time ended")
+    }
+    
+    const taskCompleted = await prisma.taskInstance.update({
+        where: { id: taskId },
+        data: {
+            status: "COMPLETED",
+            completedAt: now
+        }
+    });
+
+    res.status(200).json(new ApiResponse(200, taskCompleted, "Task completed successfully"));
+    
+
+}
