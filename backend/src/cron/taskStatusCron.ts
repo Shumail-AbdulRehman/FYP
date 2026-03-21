@@ -26,11 +26,11 @@ cron.schedule("*/5 * * * *", async () => {
         isActive: true
       },
       data: {
-        status: "LATE"
+        status: "NOT_COMPLETED_INTIME"
       }
     });
 
-    console.log(`Cron: ${missedTasks.count} missed, ${incompleteTasks.count} late`);
+    console.log(`Cron: ${missedTasks.count} missed, ${incompleteTasks.count} not_completed_intime`);
   } catch (error) {
     console.error("Task status cron error:", error);
   }

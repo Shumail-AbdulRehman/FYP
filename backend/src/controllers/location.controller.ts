@@ -87,7 +87,7 @@ export const softDeleteLocation = async (req: Request, res: Response) => {
     prisma.taskInstance.updateMany({
       where: {
         locationId,
-        status: { in: ["PENDING", "IN_PROGRESS", "LATE"] }
+        status: { in: ["PENDING", "IN_PROGRESS", "NOT_COMPLETED_INTIME"] }
       },
       data: { status: "CANCELLED", isActive: false }
     }),
@@ -208,7 +208,7 @@ export const getLocationStatsById = async (req: Request, res: Response) => {
     completed: tasks.filter(t => t.status === "COMPLETED").length,
     missed: tasks.filter(t => t.status === "MISSED").length,
     cancelled: tasks.filter(t => t.status === "CANCELLED").length,
-    late: tasks.filter(t => t.status === "LATE").length,
+    notCompletedInTime: tasks.filter(t => t.status === "NOT_COMPLETED_INTIME").length,
     completionRate: tasks.length > 0 
       ? Math.round((tasks.filter(t => t.status === "COMPLETED").length / tasks.length) * 100) 
       : 0

@@ -44,3 +44,69 @@ const tasks = await prisma.taskInstance.findMany({
   res.status(200).json(new ApiResponse(200, tasks, "Today's tasks fetched successfully"));
 };
 
+export const startTask = async (req: Request, res: Response) => {
+    const taskId = Number(req.params.taskId);
+
+    if (isNaN(taskId)) {
+        throw new ApiError(400, "Invalid task id");
+    }
+
+    const task= await prisma.taskInstance.findUnique({
+        where: {id: taskId, isActive:true}
+    });
+
+    if (!task || task.staffId !== req.user!.id) {
+        throw new ApiError(404, "Task not found for this staff");
+    }
+    
+    if (task.status !== "PENDING") {
+        throw new ApiError(400, "Only pending tasks can be started");
+    }
+
+    const now =new Date();
+
+    if(task.shiftEnd <= now) 
+    {
+        throw new ApiError(400, "Task time ended")
+    }
+
+
+
+    const GRACE_PERIOD_MINUTES = 5;
+    const nowPlusGrace = new Date(now.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000);
+
+    if (task.shiftStart > nowPlusGrace) {
+        throw new ApiError(400, "Task hasn't started yet");
+    }
+
+   
+    const graceDeadline = new Date(task.shiftStart.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000);
+
+    
+    const isLate = now > graceDeadline;
+
+    if (isLate) {
+        const lateMinutes = Math.floor((now.getTime() - task.shiftStart.getTime()) / (1000 * 60));
+        const taskStartedLate = await prisma.taskInstance.update({
+            where: { id: taskId },
+            data: {
+                status: "IN_PROGRESS",
+                startedAt: now,
+                isLate: true,
+                lateMinutes
+            }
+        });
+        return res.status(200).json(new ApiResponse(200, taskStartedLate, "Task started late"));
+    }
+
+    
+    const taskStarted = await prisma.taskInstance.update({
+        where: { id: taskId },
+        data: {
+            status: "IN_PROGRESS",
+            startedAt: now
+        }
+    });
+
+    res.status(200).json(new ApiResponse(200, taskStarted, "Task started successfully"));
+}
