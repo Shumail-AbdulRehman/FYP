@@ -5,80 +5,32 @@ cron.schedule("*/5 * * * *", async () => {
   try {
     const now = new Date();
 
-    const pendingLateTasks = await prisma.taskInstance.findMany({
-      where: {
-        shiftStart: { lt: now },
-        shiftEnd: { gt: now },
-        status: "PENDING",
-        isActive: true
-      },
-      select: {
-        id: true,
-        shiftStart: true
-      }
-    });
-
-    for (const task of pendingLateTasks) {
-      const lateMinutes = Math.floor(
-        (now.getTime() - task.shiftStart.getTime()) / (1000 * 60)
-      );
-
-      await prisma.taskInstance.update({
-        where: { id: task.id },
-        data: {
-          isLate: true,
-          lateMinutes
-        }
-      });
-    }
-
+    
     const missedTasks = await prisma.taskInstance.updateMany({
       where: {
         shiftEnd: { lt: now },
-        status: {
-          in: ["PENDING"]
-        },
+        status: "PENDING",
         isActive: true
       },
       data: {
-        status: "MISSED",
-        isLate: true
+        status: "MISSED"
       }
     });
 
-    const staleTasks = await prisma.taskInstance.findMany({
+    
+    const incompleteTasks = await prisma.taskInstance.updateMany({
       where: {
         shiftEnd: { lt: now },
         status: "IN_PROGRESS",
+        completedAt: null,
         isActive: true
       },
-      select: {
-        id: true,
-        shiftEnd: true
+      data: {
+        status: "LATE"
       }
     });
 
-    for (const task of staleTasks) {
-      const lateMinutes = Math.floor(
-        (now.getTime() - task.shiftEnd.getTime()) / (1000 * 60)
-      );
-
-      await prisma.taskInstance.update({
-        where: { id: task.id },
-        data: {
-          status: "LATE",
-          isLate: true,
-          lateMinutes
-        }
-      });
-    }
-
-    if (pendingLateTasks.length || missedTasks.count || staleTasks.length) {
-      console.log(
-        `Cron: ${pendingLateTasks.length} late, ${missedTasks.count} missed, ${staleTasks.length} stale IN_PROGRESS`
-      );
-    }
-
+    console.log(`Cron: ${missedTasks.count} missed, ${incompleteTasks.count} late`);
   } catch (error) {
     console.error("Task status cron error:", error);
   }
