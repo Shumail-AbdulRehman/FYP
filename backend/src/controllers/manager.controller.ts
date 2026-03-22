@@ -230,42 +230,4 @@ if (decodedToken.id !== req.user!.id) {
         .json(new ApiResponse(200, {}, "Token refreshed successfully"));
 };
 
-export const getTasknstancesOfLocation = async (req: Request, res: Response) => {
-
-    const locationId = Number(req.params.locationId);
-    
-    if (isNaN(locationId)) {
-        throw new ApiError(400, "Invalid location id");
-    }
-    
-    const location = await prisma.location.findUnique({
-        where: { id: locationId }
-    });
-
-    if (!location) {
-        throw new ApiError(404, "Location not found");
-    }
-
-    if (location.companyId !== req.user!.companyId) {
-        throw new ApiError(403, "Location does not belong to your company");
-    }
-
-    const tasks = await prisma.taskInstance.findMany({
-        where: { locationId, isActive: true },
-        include: {
-            staff: {
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    shiftStart: true,
-                    shiftEnd: true   
-                }
-            }
-        }
-    });
-
-    res.status(200).json(new ApiResponse(200, tasks, "Task instances fetched successfully"));
-};
-
 
