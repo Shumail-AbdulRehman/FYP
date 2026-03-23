@@ -1,7 +1,7 @@
 import './App.css';
 import { Outlet, Navigate } from 'react-router-dom';
 import useAuth from '@/hooks/useAuth';
-import { useGetCurrentUser, useRefreshToken } from './queries/common/auth.js';
+import { useGetCurrentUser, useRefreshToken } from './queries/auth.js';
 import { useDispatch } from 'react-redux';
 import { setUser } from './store/slices/authSlice.js';
 import type { AppDispatch } from '@/store/store';

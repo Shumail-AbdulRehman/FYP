@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button"
-import { useLogout } from "@/queries/common/auth"
+import { useLogout } from "@/queries/auth";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 

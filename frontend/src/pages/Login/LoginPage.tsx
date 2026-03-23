@@ -1,11 +1,11 @@
 import { useForm } from 'react-hook-form';
-import type { LoginForm } from '@/types/forms';
+import type{ LoginForm } from './types';
 import { useState } from 'react';
 
 import FormButton from '@/components/common/FormButton';
 import FormError from '@/components/common/FormError';
 import TextInput from '@/components/common/TextInput';
-import { useLogin } from '@/queries/common/auth';
+import { useLogin } from './queries';
 
 const Login = () => {
 

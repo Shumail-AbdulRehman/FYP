@@ -8,8 +8,9 @@ import { Provider } from 'react-redux';
 import { store } from './store/store.ts';
 
 import Temp from './pages/common/Temp.tsx';
-import SignUp from './pages/common/SignUp.tsx';
-import Login from './pages/common/Login.tsx';
+import SignUp from './pages/Signup/SignUpPage.tsx';
+import Login from './pages/Login/LoginPage.tsx';
+
 
 const queryClient = new QueryClient();
 

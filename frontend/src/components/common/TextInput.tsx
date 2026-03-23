@@ -1,5 +1,5 @@
 
-import type { FieldErrors, UseFormRegisterReturn } from 'react-hook-form';
+import type { UseFormRegisterReturn } from 'react-hook-form';
 
 interface TextInputProps {
   label: string;
