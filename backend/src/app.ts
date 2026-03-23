@@ -30,13 +30,15 @@ import locationRouter from "./routes/location.route.js";
 import taskTemplateRouter from "./routes/taskTemplate.route.js";
 import assignmentRouter from "./routes/assignment.route.js";
 import attendanceRouter from "./routes/attendance.route.js";
+import taskInstance from "./routes/taskInstance.route.js"
 
-app.use("/api/managers", managerRouter);
+app.use("/api/manager", managerRouter);
 app.use("/api/staff", staffRouter);
-app.use("/api/locations", locationRouter);
-app.use("/api/task-templates", taskTemplateRouter);
-app.use("/api/assignments", assignmentRouter);
+app.use("/api/location", locationRouter);
+app.use("/api/task-template", taskTemplateRouter);
+app.use("/api/assignment", assignmentRouter);
 app.use("/api/attendance", attendanceRouter);
+app.use("/api/task-instance",taskInstance)
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     if (err instanceof ApiError) {
