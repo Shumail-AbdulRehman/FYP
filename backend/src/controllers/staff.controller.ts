@@ -63,29 +63,6 @@ export const loginStaff = async (req: Request, res: Response) => {
     );
 };
 
-export const logoutStaff = async (req: Request, res: Response) => {
-
-  if (req.user!.role !== "STAFF") throw new ApiError(403, "Only staff can use this endpoint");
-
-  await prisma.staff.update({
-    where: { id: req.user!.id },
-    data: { refreshToken: null },
-  });
-
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production"
-  };
-
-  res
-    .clearCookie("accessToken", cookieOptions)
-    .clearCookie("refreshToken", cookieOptions)
-    .status(200)
-    .json(
-      new ApiResponse(200, {}, "Staff logged out successfully")
-    );
-};
-
 export const createStaff = async (req: Request, res: Response) => {
   const result = createStaffSchema.safeParse(req.body);
 

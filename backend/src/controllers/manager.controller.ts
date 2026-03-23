@@ -145,23 +145,6 @@ export const loginManager = async (req: Request, res: Response) => {
         );
 };
 
-export const logoutManager = async (req: Request, res: Response) => {
-
-    if (req.user!.role !== "MANAGER") throw new ApiError(403, "Only managers can use this endpoint");
-    
-    await prisma.manager.update({
-        where: { id: req.user!.id },
-        data: { refreshToken: null }
-    });
-
-    const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === "production" };
-
-    res.clearCookie("accessToken", cookieOptions)
-        .clearCookie("refreshToken", cookieOptions)
-        .status(200)
-        .json(new ApiResponse(200, {}, "Manager logged out successfully"));
-};
-
 export const getManagerProfile = async (req: Request, res: Response) => {
 
     if (req.user!.role !== "MANAGER") throw new ApiError(403, "Only managers can use this endpoint");

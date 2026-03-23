@@ -130,3 +130,33 @@ export const refreshToken = async (req: Request, res: Response) => {
 
   throw new ApiError(401, "Invalid role");
 };
+
+
+export const logOut = async (req: Request, res: Response) => {
+    
+  const { id, role } = req.user!;
+
+  if (role === "MANAGER") {
+    await prisma.manager.update({
+      where: { id },
+      data: { refreshToken: null },
+    });
+  } else if (role === "STAFF") {
+    await prisma.staff.update({
+      where: { id },
+      data: { refreshToken: null },
+    });
+  }
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict" as const,
+  };
+
+  res
+    .clearCookie("accessToken", cookieOptions)
+    .clearCookie("refreshToken", cookieOptions)
+    .status(200)
+    .json(new ApiResponse(200, {}, "User logged out successfully"));
+};
