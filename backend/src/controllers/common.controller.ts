@@ -16,11 +16,10 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     res.status(200).json(new ApiResponse(200, user, "user found"));
 };
 
-
 export const refreshToken = async (req: Request, res: Response) => {
-  const refreshToken = req.cookies.refreshToken;
+  const incomingRefreshToken = req.cookies.refreshToken;
 
-  if (!refreshToken) {
+  if (!incomingRefreshToken) {
     throw new ApiError(401, "Refresh token missing");
   }
 
@@ -28,10 +27,10 @@ export const refreshToken = async (req: Request, res: Response) => {
 
   try {
     decodedToken = jwt.verify(
-      refreshToken,
+      incomingRefreshToken,
       process.env.REFRESH_TOKEN_SECRET!
     ) as TokenPayload;
-  } catch (error) {
+  } catch {
     throw new ApiError(401, "Refresh token expired or invalid");
   }
 
@@ -39,56 +38,95 @@ export const refreshToken = async (req: Request, res: Response) => {
 
   let user;
 
-  
   if (role === "MANAGER") {
     user = await prisma.manager.findUnique({
       where: { id },
     });
-  } else if (role === "STAFF") {
-    user = await prisma.staff.findUnique({
-      where: { id },
-    });
-  } else {
-    throw new ApiError(401, "Invalid role");
-  }
 
-  if (!user) {
-    throw new ApiError(401, "Unauthorized");
-  }
+    if (!user) {
+      throw new ApiError(401, "Unauthorized");
+    }
 
-  const accessToken = generateAccessToken(user, role);
-  const newRefreshToken = generateRefreshToken(user, role);
+    if (user.refreshToken !== incomingRefreshToken) {
+      await prisma.manager.update({
+        where: { id: user.id },
+        data: { refreshToken: null },
+      });
+      throw new ApiError(403, "Token reuse detected");
+    }
 
-  
-  
-  if (role === "MANAGER") {
+    const accessToken = generateAccessToken(user, role);
+    const newRefreshToken = generateRefreshToken(user, role);
+
     await prisma.manager.update({
       where: { id: user.id },
       data: { refreshToken: newRefreshToken },
     });
-  } else {
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict" as const,
+    };
+
+    const safeUser = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role,
+    };
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, cookieOptions)
+      .cookie("refreshToken", newRefreshToken, cookieOptions)
+      .json(new ApiResponse(200, safeUser, "Token refreshed successfully"));
+  }
+
+  if (role === "STAFF") {
+    user = await prisma.staff.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    if (user.refreshToken !== incomingRefreshToken) {
+      await prisma.staff.update({
+        where: { id: user.id },
+        data: { refreshToken: null },
+      });
+      throw new ApiError(403, "Token reuse detected");
+    }
+
+    const accessToken = generateAccessToken(user, role);
+    const newRefreshToken = generateRefreshToken(user, role);
+
     await prisma.staff.update({
       where: { id: user.id },
       data: { refreshToken: newRefreshToken },
     });
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict" as const,
+    };
+
+    const safeUser = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role,
+    };
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, cookieOptions)
+      .cookie("refreshToken", newRefreshToken, cookieOptions)
+      .json(new ApiResponse(200, safeUser, "Token refreshed successfully"));
   }
 
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-  };
-
-
-  const safeUser = {
-  id: user.id,
-  email: user.email,
-  name: user.name,
-  role,
-};
-
-  return res
-    .status(200)
-    .cookie("accessToken", accessToken, cookieOptions)
-    .cookie("refreshToken", newRefreshToken, cookieOptions)
-    .json(new ApiResponse(200, safeUser, "Token refreshed successfully"));
+  throw new ApiError(401, "Invalid role");
 };
