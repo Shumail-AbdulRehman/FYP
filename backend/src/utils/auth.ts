@@ -14,9 +14,9 @@ export function generateAccessToken(user: { id: number; email: string; name: str
     );
 }
 
-export function generateRefreshToken(user: { id: number }) {
+export function generateRefreshToken(user: { id: number},role: "MANAGER" | "STAFF") {
     return jwt.sign(
-        { id: user.id },
+        { id: user.id , role},
         process.env.REFRESH_TOKEN_SECRET as string,
         { expiresIn: process.env.REFRESH_TOKEN_EXPIRY } as SignOptions
     );

@@ -50,7 +50,7 @@ export const signupManager = async (req: Request, res: Response) => {
     });
 
     const accessToken = generateAccessToken(manager, manager.role);
-    const refreshToken = generateRefreshToken(manager);
+    const refreshToken = generateRefreshToken(manager, manager.role);
 
     await prisma.manager.update({
         where: { id: manager.id },
@@ -114,7 +114,7 @@ export const loginManager = async (req: Request, res: Response) => {
     }
 
     const accessToken = generateAccessToken(manager, manager.role);
-    const refreshToken = generateRefreshToken(manager);
+    const refreshToken = generateRefreshToken(manager, manager.role);
 
     await prisma.manager.update({
         where: { id: manager.id },
@@ -183,55 +183,4 @@ export const getManagerProfile = async (req: Request, res: Response) => {
 
     res.status(200).json(new ApiResponse(200, manager, "Manager profile fetched successfully"));
 };
-
-export const refreshManagerToken = async (req: Request, res: Response) => {
-    const refreshToken = req.cookies.refreshToken;
-
-    if (!refreshToken) {
-        throw new ApiError(401, "Refresh token missing");
-    }
-
-    let decodedToken: TokenPayload;
-try {
-    decodedToken = jwt.verify(
-        refreshToken, 
-        process.env.REFRESH_TOKEN_SECRET!
-    ) as TokenPayload;
-} catch (error) {
-    throw new ApiError(401, "Refresh token expired or invalid");
-}
-
-if (decodedToken.id !== req.user!.id) {  
-    throw new ApiError(401, "Token mismatch");
-}
-
-    const manager = await prisma.manager.findUnique({
-        where: { id: req.user!.id, refreshToken }
-    });
-
-   
-    if (!manager || manager.role !== "MANAGER") {
-        throw new ApiError(401, "Unauthorized");
-    }
-
-    const accessToken = generateAccessToken(manager, manager.role);
-    const newRefreshToken = generateRefreshToken(manager);
-
-    await prisma.manager.update({
-        where: { id: manager.id },
-        data: { refreshToken: newRefreshToken }
-    });
-
-    const cookieOptions = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production"
-    };
-
-    res
-        .status(200)
-        .cookie("accessToken", accessToken, cookieOptions)
-        .cookie("refreshToken", newRefreshToken, cookieOptions)
-        .json(new ApiResponse(200, {}, "Token refreshed successfully"));
-};
-
 

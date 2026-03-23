@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { loginStaff, logoutStaff, createStaff, getStaff, softDeleteStaff , getInactiveStaff, getStaffById, getStaffByLocation, getProfile, refreshStaffToken   } from "../controllers/staff.controller.js";
+import { loginStaff, logoutStaff, createStaff, getStaff, softDeleteStaff , getInactiveStaff, getStaffById, getStaffByLocation, getProfile   } from "../controllers/staff.controller.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 import authorize from "../middlewares/authorize.middleware.js";
 
@@ -15,7 +15,7 @@ router.get("/inactive", verifyJwt, authorize, getInactiveStaff);
 router.get("/:id", verifyJwt, authorize, getStaffById);
 router.get("/location/:locationId", verifyJwt, authorize, getStaffByLocation);
 router.get("/profile/me", verifyJwt, getProfile);
-router.post("/refresh-token", refreshStaffToken);
+
 
 
 
