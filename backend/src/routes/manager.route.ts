@@ -4,10 +4,10 @@ import { verifyJwt } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-router.post("/signup", signupManager);
-router.post("/login", loginManager);
-router.post("/logout", verifyJwt, logoutManager);
-router.get("/me", verifyJwt, getManagerProfile);
+router.post("/manager-signup", signupManager);
+router.post("/manager-login", loginManager);
+router.post("/manager-logout", verifyJwt, logoutManager);
+router.get("/profile/me", verifyJwt, getManagerProfile);
 router.post("/refresh-token", verifyJwt, refreshManagerToken);
 
 export default router;
