@@ -1,12 +1,12 @@
 
 import './App.css'
-import SignUp from './pages/Manager/SignUp'
+import { Outlet } from 'react-router-dom'
 
 function App() {
   
 
   return (
-    <SignUp/>
+    <Outlet/>
   )
 }
 
