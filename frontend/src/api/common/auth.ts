@@ -1,25 +1,40 @@
-import {client} from "../client.js";
-import type { SignUpForm,LoginForm } from "@/types/forms.js";
+import { client } from '../client';
+import type { SignUpForm, LoginForm } from '@/types/forms';
+import type { AuthUser, UserRole } from '@/types/auth';
 
 
 
-
-export const signUp= async(data: SignUpForm)=>
-{
-    const res= await client.post('/manager/manager-signup',data,{withCredentials:true});
-    return res.data;
-}
-
-
-export const login = async (data: LoginForm) => {
-  
-  const { role, ...payload } = data; 
-
-  if (role === "Manager") {
-    const res = await client.post("/manager/manager-login", payload, { withCredentials: true });
-    return res.data;
-  } else {
-    const res = await client.post("/staff/staff-login", payload, { withCredentials: true });
-    return res.data;
-  }
+export const signUp = async (data: SignUpForm): Promise<AuthUser> => {
+  const res = await client.post('/manager/manager-signup', data, { withCredentials: true });
+  return res.data.data;
 };
+
+export const login = async (data: LoginForm): Promise<AuthUser> => {
+  const { role, ...payload } = data;
+  const url = role === 'Manager' ? '/manager/manager-login' : '/staff/staff-login';
+  const res = await client.post(url, payload, { withCredentials: true });
+  return res.data.data;
+};
+
+
+export const refreshToken = async () => {
+  
+  const res= await client.post("/common/refresh-token");
+  return res.data;
+
+};
+
+
+
+export const logoutApi = async () => {
+  
+  const res=await client.post("/common/logout", {}, { withCredentials: true });
+  return res.data;
+};
+
+
+export const getCurrentUser=async ()=>
+{
+  const res=await client.get("/common/get-current-user");
+  return res;
+}
