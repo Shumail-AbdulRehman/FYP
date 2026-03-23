@@ -5,3 +5,10 @@ export type SignUpForm = {
   password: string;
   companyName: string;
 };
+
+
+export type LoginForm={
+  email: string;
+  password: string;
+  role: "Staff" | "Manager"
+}

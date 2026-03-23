@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import type {SignUpForm} from '../../types/forms.js'
-import {useCreateManager} from '../../queries/manager.js'
+import {useCreateManager} from '../../queries/common/auth.js'
 import { useState } from 'react';
 
 import TextInput from '@/components/common/TextInput.js';
@@ -49,7 +49,7 @@ const SignUp= () => {
         <TextInput
           label='Email'
           register={register('email',{required: "Email is required"})}
-          error={errors.name?.message}
+          error={errors.email?.message}
         />
 
         <TextInput 

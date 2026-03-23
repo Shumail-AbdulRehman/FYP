@@ -3,8 +3,11 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import SignUp from './pages/common/SignUp.tsx';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+
+
+import SignUp from './pages/common/SignUp.tsx';
+import Login from './pages/common/Login.tsx';
 
 
 
@@ -20,6 +23,10 @@ const router= createBrowserRouter([
       {
         path: "signup",
         element: <SignUp/>
+      },
+      {
+        path: "login",
+        element: <Login/>
       }
     ]
   }

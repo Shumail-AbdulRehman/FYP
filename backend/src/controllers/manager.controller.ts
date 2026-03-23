@@ -83,7 +83,11 @@ export const signupManager = async (req: Request, res: Response) => {
 
 export const loginManager = async (req: Request, res: Response) => {
 
+
+   
     const result = managerLoginSchema.safeParse(req.body);
+    
+   
 
     if (!result.success) {
         const errors = result.error.issues.map(e => ({
