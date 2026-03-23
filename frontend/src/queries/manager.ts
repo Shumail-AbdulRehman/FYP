@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { signUp } from '../api/manager.js';
+import { signUp } from '@/api/common/auth';
 
 
 

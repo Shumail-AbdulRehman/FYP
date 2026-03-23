@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form';
-import type {SignUpForm} from '../../types/forms'
+import type {SignUpForm} from '../../types/forms.js'
 import {useCreateManager} from '../../queries/manager.js'
 import { useState } from 'react';
 
