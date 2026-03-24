@@ -6,8 +6,8 @@ export const createLocationSchema = z.object({
     .string({ message: "location name is required" }),
   address: z
     .string({ message: "location address is required" }),
-  latitude: z.number({ message: "latitude is required" }),
-  longitude: z.number({ message: "longitude is required" })
+  latitude: z.string({ message: "latitude is required" }),
+  longitude: z.string({ message: "longitude is required" })
 
 })
 
