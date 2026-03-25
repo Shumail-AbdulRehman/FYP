@@ -13,6 +13,7 @@ export default function LocationsPage() {
   const createLocation = useCreateLocation();
   const getLocations = useGetLocations();
 
+  
   const {
     register,
     handleSubmit,
@@ -89,21 +90,22 @@ export default function LocationsPage() {
 
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {getLocations.data.data && getLocations.data.data.length > 0 ? (
-          getLocations.data.data.map((loc: LocationWithCounts) => (
-            <LocationCard
-              key={loc.id}
-              name={loc.name}
-              address={loc.address}
-              staff={loc._count.staff}
-              taskTemplate={loc._count.taskTemplates}
-              lat={loc.latitude.toString()}
-              lng={loc.longitude.toString()}
-            />
-          ))
-        ) : (
-          <p>No Location Found</p>
-        )}
+        {getLocations.data?.data?.length ? (
+  getLocations.data.data.map((loc: LocationWithCounts) => (
+    <LocationCard
+      key={loc.id}
+      name={loc.name}
+      address={loc.address}
+      staff={loc._count.staff}
+      taskTemplate={loc._count.taskTemplates}
+      lat={loc.latitude.toString()}
+      lng={loc.longitude.toString()}
+      id={loc.id}
+    />
+  ))
+) : (
+  <p>No Location Found</p>
+)}
       </div>
     </div>
   );

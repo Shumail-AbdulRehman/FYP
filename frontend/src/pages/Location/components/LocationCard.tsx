@@ -1,4 +1,7 @@
 import { MoreVertical, MapPin, Users, CheckSquare } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import type{LocationCardProps} from "../types"
+
 
 export default function LocationCard({
   name = "default",
@@ -9,7 +12,14 @@ export default function LocationCard({
   lng = "0.000",
   geofence = "100m",
   status = "Active",
-}) {
+  id
+}:LocationCardProps) {
+
+
+  console.log("location card is is ::",id);
+
+  const navigate=useNavigate();
+
   return (
     <div className="w-full max-w-md rounded-2xl border bg-white p-4 shadow-sm">
       
@@ -51,7 +61,7 @@ export default function LocationCard({
 
      
       <div className="mt-4 flex items-center gap-2 border-t pt-3">
-        <button className="flex-1 rounded-xl bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700">
+        <button onClick={()=> navigate(`/locations/${id}`)} className="flex-1 rounded-xl bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700">
           View Details
         </button>
 

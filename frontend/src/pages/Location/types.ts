@@ -34,3 +34,16 @@ export type LocationWithCounts = {
     taskTemplates: number;
   };
 };
+
+
+export interface LocationCardProps {
+  name?: string;
+  address?: string;
+  staff?: number;
+  taskTemplate?: number;
+  lat?: string;
+  lng?: string;
+  geofence?: string;
+  status?: string;
+  id: number; 
+}
