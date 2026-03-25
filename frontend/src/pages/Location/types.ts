@@ -1,11 +1,17 @@
 export type CreateLocationInput = {
   name: string;
   address: string;
-  latitude: number;
-  longitude: number;
+  latitude: string;
+  longitude: string;
 };
 
 
+export type LocationFormValues = {
+  name: string;
+  address: string;
+  latitude: string;
+  longitude: string;
+};
 
 export type AssignShiftInput = {
   shiftStart: Date;
@@ -18,8 +24,8 @@ export type LocationWithCounts = {
   id: number;
   name: string;
   address: string;
-  latitude: number;
-  longitude: number;
+  latitude: string;
+  longitude: string;
   radiusMeters: number;
   isActive: boolean;
   status: string; 
