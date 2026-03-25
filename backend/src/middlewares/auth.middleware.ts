@@ -16,7 +16,7 @@ export const verifyJwt = async (req: Request, res: Response, next: NextFunction)
     try {
         decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as string) as JwtPayload;
     } catch (error) {
-        throw new ApiError(401, "Invalid or expired access token");
+        throw new ApiError(401, "Access Token Expired");
     }
 
     const { id, role } = decoded;

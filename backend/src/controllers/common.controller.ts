@@ -31,7 +31,7 @@ export const refreshToken = async (req: Request, res: Response) => {
       process.env.REFRESH_TOKEN_SECRET!
     ) as TokenPayload;
   } catch {
-    throw new ApiError(401, "Refresh token expired or invalid");
+    throw new ApiError(401, "Access Token Expired");
   }
 
   const { id, role } = decodedToken;
