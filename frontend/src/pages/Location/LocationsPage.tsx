@@ -30,10 +30,15 @@ export default function LocationsPage() {
       longitude: data.longitude,
     },
     {   
-         onError: (error: any) => {
-                console.log(error.response?.data?.message || "Something went wrong");
-            }
-    },);
+      onSuccess:(data)=>{
+
+        console.log(data.data);
+        
+      },
+      onError: (error: any) => {
+        console.log(error.response?.data?.message || "Something went wrong");
+      }
+    });
 
 
     
@@ -48,7 +53,7 @@ export default function LocationsPage() {
 
   return (
     <div className="space-y-6">
-      {/* FormDialog for creating a new location */}
+     
       <FormDialog
         title="Create New Location"
         triggerText="Add Location"
@@ -82,7 +87,7 @@ export default function LocationsPage() {
         </div>
       </FormDialog>
 
-      {/* Location cards list */}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {getLocations.data.data && getLocations.data.data.length > 0 ? (
           getLocations.data.data.map((loc: LocationWithCounts) => (
