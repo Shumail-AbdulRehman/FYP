@@ -216,23 +216,39 @@ export const getLocationStatsById = async (req: Request, res: Response) => {
     periodLabel = `Last ${days} days`;
   }
 
-  const tasks = await prisma.taskInstance.findMany({
-    where: { locationId, isActive: true, ...dateFilter }
-  });
+ const [locationInfo, taskStats] = await Promise.all([
+  prisma.location.findUnique({
+    where: { id: locationId },
+    include: {
+      taskInstances: {
+        where: {
+          isActive: true,
+          ...dateFilter,
+        },
+      },
+      staff: {
+        where:{
+          isActive:true
+        }
+      },
+      taskTemplates: {where:{
+        isActive:true
+      }},
+    },
+  }),
 
-  const stats = {
-    period: periodLabel,
-    total: tasks.length,
-    pending: tasks.filter(t => t.status === "PENDING").length,
-    inProgress: tasks.filter(t => t.status === "IN_PROGRESS").length,
-    completed: tasks.filter(t => t.status === "COMPLETED").length,
-    missed: tasks.filter(t => t.status === "MISSED").length,
-    cancelled: tasks.filter(t => t.status === "CANCELLED").length,
-    notCompletedInTime: tasks.filter(t => t.status === "NOT_COMPLETED_INTIME").length,
-    completionRate: tasks.length > 0 
-      ? Math.round((tasks.filter(t => t.status === "COMPLETED").length / tasks.length) * 100) 
-      : 0
-  };
+  prisma.taskInstance.groupBy({
+    by: ["status"],
+    where: {
+      locationId,
+      isActive: true,
+      ...dateFilter,
+    },
+    _count: {
+      status: true,
+    },
+  }),
+]);
 
-  res.status(200).json(new ApiResponse(200, stats, "Location stats fetched successfully"));
+  res.status(200).json(new ApiResponse(200, {locationInfo,taskStats}, "Location stats fetched successfully"));
 };

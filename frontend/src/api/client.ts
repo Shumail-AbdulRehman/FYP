@@ -1,4 +1,7 @@
 import axios from 'axios';
+import { store } from '@/store/store';
+import { clearUser } from '@/store/slices/authSlice';
+
 
 export const client = axios.create({
   baseURL: 'http://localhost:8080/api',
@@ -14,13 +17,21 @@ client.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    
+    if (originalRequest.url?.includes("/common/refresh-token")) {
+      isRefreshing = false;
+      refreshPromise = null;
+      store.dispatch(clearUser());
+      return Promise.reject(error);
+    }
+
     if (
-  error.response?.status !== 401 || 
-  error.response?.data?.message !== "Access Token Expired" || 
-  originalRequest._retry 
-) {
-  return Promise.reject(error);
-}
+      error.response?.status !== 401 ||
+      error.response?.data?.message !== "Access Token Expired" ||
+      originalRequest._retry
+    ) {
+      return Promise.reject(error);
+    }
 
     originalRequest._retry = true;
 
@@ -46,7 +57,9 @@ client.interceptors.response.use(
       return client(originalRequest);
 
     } catch (err) {
-      window.location.href = "/login";
+      isRefreshing = false;
+      refreshPromise = null;
+      store.dispatch(clearUser());
       return Promise.reject(err);
     }
   }

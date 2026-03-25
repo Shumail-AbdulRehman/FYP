@@ -11,7 +11,7 @@ import Temp from './pages/common/Temp.tsx';
 import SignUp from './pages/Signup/SignUpPage.tsx';
 import Login from './pages/Login/LoginPage.tsx';
 import LocationsPage from './pages/Location/LocationsPage.tsx';
-
+import LocationDetailPage from './pages/Location/LocationDetailPage.tsx';
 
 const queryClient = new QueryClient();
 
@@ -50,6 +50,14 @@ const router = createBrowserRouter([
         <ProtectedRoute>
           <LocationsPage/>
         </ProtectedRoute>
+        )
+      },
+      {
+        path:`locations/:id`,
+        element:(
+          <ProtectedRoute>
+            <LocationDetailPage/>
+          </ProtectedRoute>
         )
       }
     ],
