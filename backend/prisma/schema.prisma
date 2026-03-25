@@ -50,6 +50,11 @@ model Staff {
   attendances   Attendance[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
+
+   @@index([companyId])
+  @@index([locationId])
+  @@index([isActive])
 }
 
 model Location {
@@ -68,6 +73,9 @@ model Location {
   latitude      String
   longitude     String
   radiusMeters  Int    @default(100)
+
+  @@index([companyId])
+  @@index([isActive])
 
 }
 
@@ -88,6 +96,9 @@ model TaskTemplate {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   effectiveDate    DateTime
+
+  @@index([locationId])
+  @@index([isActive])
 }
 
 model TaskInstance {
@@ -110,6 +121,10 @@ model TaskInstance {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   isActive    Boolean  @default(true)
+
+
+  @@index([locationId, isActive, date])  
+  @@index([locationId, status]) 
 }
 
 
@@ -129,6 +144,9 @@ model Attendance {
   lateMinutes    Int?                        
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+
+    @@index([locationId, date])
+  @@index([staffId])
 }
 
 enum AttendanceStatus {
