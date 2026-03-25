@@ -1,4 +1,4 @@
-import { MoreVertical, MapPin, Users, CheckSquare, Target } from "lucide-react";
+import { MoreVertical, MapPin, Users, CheckSquare } from "lucide-react";
 
 export default function LocationCard({
   name = "default",
