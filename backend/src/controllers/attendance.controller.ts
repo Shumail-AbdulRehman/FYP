@@ -142,9 +142,17 @@ export const checkIn = async (req: Request, res: Response) => {
 
     const { latitude, longitude } = result.data;
 
-    if (!isWithinRadius(latitude, longitude, location.latitude, location.longitude, location.radiusMeters)) {
-        throw new ApiError(400, "You are not within the allowed radius of your location");
-    }
+    if (
+  !isWithinRadius(
+    Number(latitude),
+    Number(longitude),
+    Number(location.latitude),
+    Number(location.longitude),
+    location.radiusMeters
+  )
+) {
+  throw new ApiError(400, "You are not within the allowed radius of your location");
+}
 
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
@@ -242,9 +250,17 @@ export const checkOut = async (req: Request, res: Response) => {
 
     const { latitude, longitude } = result.data;
 
-    if (!isWithinRadius(latitude, longitude, location.latitude, location.longitude, location.radiusMeters)) {
-        throw new ApiError(400, "You are not within the allowed radius of your location");
-    }
+    if (
+  !isWithinRadius(
+    Number(latitude),
+    Number(longitude),
+    Number(location.latitude),
+    Number(location.longitude),
+    location.radiusMeters
+  )
+) {
+  throw new ApiError(400, "You are not within the allowed radius of your location");
+}
 
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);

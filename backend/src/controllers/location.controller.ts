@@ -5,7 +5,9 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 
 export const createLocation = async (req: Request, res: Response) => {
-  const result = createLocationSchema.safeParse(req.body);
+
+  console.log("data from req::",req.body);
+  const result = createLocationSchema.safeParse(req.body.data);
 
   if (!result.success) {
     const errors = result.error.issues.map(e => ({
