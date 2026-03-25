@@ -1,7 +1,7 @@
 import { MoreVertical, MapPin, Users, CheckSquare, Target } from "lucide-react";
 
 export default function LocationCard({
-  title = "default",
+  name = "default",
   address = "default",
   staff = 0,
   taskTemplate = 0,
@@ -19,7 +19,7 @@ export default function LocationCard({
             <MapPin className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold">{title}</h2>
+            <h2 className="text-lg font-semibold">{name}</h2>
             <p className="text-sm text-gray-500">{address}</p>
           </div>
         </div>
