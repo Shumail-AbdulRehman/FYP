@@ -10,6 +10,7 @@ import { store } from './store/store.ts';
 import Temp from './pages/common/Temp.tsx';
 import SignUp from './pages/Signup/SignUpPage.tsx';
 import Login from './pages/Login/LoginPage.tsx';
+import LocationsPage from './pages/Location/LocationsPage.tsx';
 
 
 const queryClient = new QueryClient();
@@ -43,6 +44,14 @@ const router = createBrowserRouter([
           </GuestRoute>
         ),
       },
+      {
+        path:'locations',
+        element:(
+        <ProtectedRoute>
+          <LocationsPage/>
+        </ProtectedRoute>
+        )
+      }
     ],
   },
 ]);
