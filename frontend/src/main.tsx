@@ -7,11 +7,14 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './store/store.ts';
 
-import Temp from './pages/common/Temp.tsx';
+import DashboardLayout from './components/layout/DashboardLayout.tsx';
 import SignUp from './pages/Signup/SignUpPage.tsx';
 import Login from './pages/Login/LoginPage.tsx';
 import LocationsPage from './pages/Location/LocationsPage.tsx';
 import LocationDetailPage from './pages/Location/LocationDetailPage.tsx';
+import DashboardPage from './pages/Dashboard/DashboardPage.tsx';
+import StaffPage from './pages/Staff/StaffPage.tsx';
+import AttendancePage from './pages/Attendance/AttendancePage.tsx';
 
 const queryClient = new QueryClient();
 
@@ -20,14 +23,6 @@ const router = createBrowserRouter([
     path: '/',
     element: <App />,
     children: [
-      {
-        path:'/',
-        element: (
-          <ProtectedRoute>
-            <Temp/>
-          </ProtectedRoute>
-        )
-      },
       {
         path: 'signup',
         element: (
@@ -45,21 +40,19 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path:'locations',
-        element:(
-        <ProtectedRoute>
-          <LocationsPage/>
-        </ProtectedRoute>
-        )
-      },
-      {
-        path:`locations/:id`,
-        element:(
+        element: (
           <ProtectedRoute>
-            <LocationDetailPage/>
+            <DashboardLayout />
           </ProtectedRoute>
-        )
-      }
+        ),
+        children: [
+          { index: true, element: <DashboardPage /> },
+          { path: 'locations', element: <LocationsPage /> },
+          { path: 'locations/:id', element: <LocationDetailPage /> },
+          { path: 'staff', element: <StaffPage /> },
+          { path: 'attendance', element: <AttendancePage /> },
+        ],
+      },
     ],
   },
 ]);
