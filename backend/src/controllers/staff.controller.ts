@@ -86,7 +86,7 @@ export const createStaff = async (req: Request, res: Response) => {
     }
   }
 
-  
+
 
   const staff = await prisma.staff.create({
     data: {
@@ -120,8 +120,8 @@ export const getStaff = async (req: Request, res: Response) => {
       locationId: true,
       createdAt: true,
       updatedAt: true,
-      shiftStart:true,
-      shiftEnd:true
+      shiftStart: true,
+      shiftEnd: true
     }
   });
 
@@ -147,23 +147,23 @@ export const softDeleteStaff = async (req: Request, res: Response) => {
   //   data: { isActive: false, refreshToken: null }
   // });
 
-await prisma.$transaction([
-  prisma.staff.update({
-    where: { id: staffId },
-    data: { isActive: false, refreshToken: null },
-  }),
-  prisma.taskTemplate.updateMany({
-    where: { staffId, isActive: true },
-    data: { staffId: null },
-  }),
-  prisma.taskInstance.updateMany({
-    where: {
-      staffId,
-      status: { in: ["PENDING", "IN_PROGRESS"] }, 
-    },
-    data: { status:"CANCELLED" }, 
-  }),
-]);
+  await prisma.$transaction([
+    prisma.staff.update({
+      where: { id: staffId },
+      data: { isActive: false, refreshToken: null },
+    }),
+    prisma.taskTemplate.updateMany({
+      where: { staffId, isActive: true },
+      data: { staffId: null },
+    }),
+    prisma.taskInstance.updateMany({
+      where: {
+        staffId,
+        status: { in: ["PENDING", "IN_PROGRESS"] },
+      },
+      data: { status: "CANCELLED" },
+    }),
+  ]);
 
   res.status(200).json(new ApiResponse(200, {}, "Staff deactivated successfully"));
 };
@@ -184,8 +184,8 @@ export const getStaffById = async (req: Request, res: Response) => {
       locationId: true,
       createdAt: true,
       updatedAt: true,
-      shiftStart:true,
-      shiftEnd:true
+      shiftStart: true,
+      shiftEnd: true
     }
   });
 
@@ -218,8 +218,8 @@ export const getStaffByLocation = async (req: Request, res: Response) => {
       locationId: true,
       createdAt: true,
       updatedAt: true,
-      shiftStart:true,
-      shiftEnd:true
+      shiftStart: true,
+      shiftEnd: true
     }
   });
 
@@ -239,8 +239,8 @@ export const getInactiveStaff = async (req: Request, res: Response) => {
       locationId: true,
       createdAt: true,
       updatedAt: true,
-      shiftStart:true,
-      shiftEnd:true
+      shiftStart: true,
+      shiftEnd: true
     }
   });
 
@@ -248,27 +248,27 @@ export const getInactiveStaff = async (req: Request, res: Response) => {
 };
 
 export const getProfile = async (req: Request, res: Response) => {
-    const staff = await prisma.staff.findUnique({
-        where: { id: req.user!.id },
-        select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            isActive: true,
-            companyId: true,
-            locationId: true,
-            createdAt: true,
-            updatedAt: true,
-            shiftStart:true,
-            shiftEnd:true
-        }
-    });
-
-    if (!staff) {
-        throw new ApiError(404, "Staff not found");
+  const staff = await prisma.staff.findUnique({
+    where: { id: req.user!.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      isActive: true,
+      companyId: true,
+      locationId: true,
+      createdAt: true,
+      updatedAt: true,
+      shiftStart: true,
+      shiftEnd: true
     }
+  });
 
-    res.status(200).json(new ApiResponse(200, staff, "Profile fetched successfully"));
+  if (!staff) {
+    throw new ApiError(404, "Staff not found");
+  }
+
+  res.status(200).json(new ApiResponse(200, staff, "Profile fetched successfully"));
 };
 

@@ -56,3 +56,30 @@ export const createStaffSchema = z.object({
   });
 
 export type CreateStaffInput = z.infer<typeof createStaffSchema>;
+
+export const editStaffSchema = z.object({
+  name: z
+    .string({ message: "Name is required" })
+    .min(2, "Name must be at least 2 characters")
+    .optional(),
+  email: z
+    .string({ message: "Email is required" })
+    .email("Invalid email format")
+    .optional(),
+  shiftStart: z.coerce.date({ message: "Shift start must be a valid date" }).optional(),
+  shiftEnd: z.coerce.date({ message: "Shift end must be a valid date" }).optional(),
+}).superRefine((data, ctx) => {
+  if (data.shiftStart !== undefined && data.shiftEnd !== undefined) {
+    const startMin = data.shiftStart.getHours() * 60 + data.shiftStart.getMinutes();
+    const endMin = data.shiftEnd.getHours() * 60 + data.shiftEnd.getMinutes();
+    if (startMin === endMin) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Shift start and end cannot be the same time",
+        path: ["shiftEnd"],
+      });
+    }
+  }
+});
+
+export type EditStaffInput = z.infer<typeof editStaffSchema>;
