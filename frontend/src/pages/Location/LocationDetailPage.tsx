@@ -4,6 +4,8 @@ import { useGetLocationById } from "./queries";
 import type { LocationStatsFilter } from "./queries";
 import StatusBadge from "@/components/common/StatusBadge";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
+import { useDeleteTaskTemplate, useEditTaskTemplate } from "@/pages/Task/queries";
+import { useAssignStaffToTemplate } from "@/pages/Assignment/queries";
 import {
   MapPin,
   Building2,
@@ -12,12 +14,14 @@ import {
   ClipboardList,
   Navigation,
   Radius,
-  ArrowLeft,
   XCircle,
   Activity,
   CalendarCheck,
   Calendar,
   RefreshCw,
+  Trash2,
+  Pencil,
+  MoreVertical,
 } from "lucide-react";
 
 /* ── helpers ── */
@@ -69,6 +73,346 @@ const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
 ];
 
 interface TaskStatEntry { status: string; _count: { status: number } }
+
+/* ── Templates Tab Component ── */
+function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: any[] }) {
+  const deleteTemplate = useDeleteTaskTemplate();
+  const editTemplate = useEditTaskTemplate();
+  const assignStaff = useAssignStaffToTemplate();
+  const [openMenu, setOpenMenu] = useState<number | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<any | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    staffId: "" as string,
+    shiftStart: "",
+    shiftEnd: "",
+    recurringType: "" as string,
+    effectiveDate: "",
+  });
+
+  const handleDelete = (t: any) => {
+    setOpenMenu(null);
+    if (confirm(`Delete "${t.title}"? This will cancel all pending task instances.`)) {
+      deleteTemplate.mutate(t.id);
+    }
+  };
+
+  // Format ISO datetime to "HH:mm" for input[type=time]
+  const toTimeValue = (iso: string | null) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  };
+
+  // Format ISO date to "YYYY-MM-DD" for input[type=date]
+  const toDateValue = (iso: string | null) => {
+    if (!iso) return "";
+    return new Date(iso).toISOString().split("T")[0];
+  };
+
+  const handleEditOpen = (t: any) => {
+    setOpenMenu(null);
+    setEditError(null);
+    setEditingTemplate(t);
+    setEditForm({
+      title: t.title,
+      description: t.description || "",
+      staffId: t.staffId ? String(t.staffId) : "",
+      shiftStart: toTimeValue(t.shiftStart),
+      shiftEnd: toTimeValue(t.shiftEnd),
+      recurringType: t.recurringType || "",
+      effectiveDate: toDateValue(t.effectiveDate),
+    });
+  };
+
+  const extractError = (err: any) =>
+    err?.response?.data?.message ||
+    err?.response?.data?.errors?.map((e: any) => e.message).join(", ") ||
+    err?.message ||
+    "An unknown error occurred";
+
+  const handleEditSave = async () => {
+    if (!editingTemplate) return;
+    setEditError(null);
+
+    // 1) Build template-edit payload (everything except staffId)
+    const payload: Record<string, any> = {};
+    if (editForm.title !== editingTemplate.title) payload.title = editForm.title;
+    if (editForm.description !== (editingTemplate.description || "")) payload.description = editForm.description || undefined;
+    if (editForm.recurringType && editForm.recurringType !== editingTemplate.recurringType) {
+      payload.recurringType = editForm.recurringType;
+    }
+    if (editForm.shiftStart && editForm.shiftStart !== toTimeValue(editingTemplate.shiftStart)) {
+      const base = new Date(editingTemplate.shiftStart);
+      const [h, m] = editForm.shiftStart.split(":").map(Number);
+      base.setHours(h, m, 0, 0);
+      payload.shiftStart = base.toISOString();
+    }
+    if (editForm.shiftEnd && editForm.shiftEnd !== toTimeValue(editingTemplate.shiftEnd)) {
+      const base = new Date(editingTemplate.shiftEnd);
+      const [h, m] = editForm.shiftEnd.split(":").map(Number);
+      base.setHours(h, m, 0, 0);
+      payload.shiftEnd = base.toISOString();
+    }
+    if (editForm.effectiveDate && editForm.effectiveDate !== toDateValue(editingTemplate.effectiveDate)) {
+      payload.effectiveDate = new Date(editForm.effectiveDate).toISOString();
+    }
+
+    // 2) Check if staff assignment changed
+    const staffChanged = editForm.staffId !== String(editingTemplate.staffId ?? "");
+    const hasFieldChanges = Object.keys(payload).length > 0;
+
+    try {
+      // Save template field changes first (if any)
+      if (hasFieldChanges) {
+        await new Promise<void>((resolve, reject) => {
+          editTemplate.mutate(
+            { id: editingTemplate.id, data: payload },
+            { onSuccess: () => resolve(), onError: (err) => reject(err) }
+          );
+        });
+      }
+
+      // Then assign staff via the assignment endpoint (if changed)
+      if (staffChanged && editForm.staffId) {
+        await new Promise<void>((resolve, reject) => {
+          assignStaff.mutate(
+            { templateId: editingTemplate.id, staffId: Number(editForm.staffId) },
+            { onSuccess: () => resolve(), onError: (err) => reject(err) }
+          );
+        });
+      }
+
+      setEditingTemplate(null);
+    } catch (err: unknown) {
+      setEditError(extractError(err));
+    }
+  };
+
+  const inputCls = "w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+
+  if (templates.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-xl border border-slate-700/60 bg-slate-900 py-16 text-center">
+        <ClipboardList className="h-12 w-12 text-slate-500 mb-4" />
+        <p className="text-sm text-slate-400">No task templates for this location.</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {templates.map((t: any) => (
+          <div
+            key={t.id}
+            className="relative rounded-xl border border-slate-700/60 bg-slate-900 p-5 transition-all hover:border-slate-600 hover:shadow-lg hover:shadow-indigo-500/5"
+          >
+            {/* Header: title + 3-dot menu */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-semibold text-white truncate">{t.title}</h3>
+                {t.description && (
+                  <p className="mt-0.5 text-xs text-slate-500 line-clamp-2">{t.description}</p>
+                )}
+              </div>
+
+              {/* 3-dot menu */}
+              <div className="relative shrink-0">
+                <button
+                  onClick={() => setOpenMenu(openMenu === t.id ? null : t.id)}
+                  className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+
+                {openMenu === t.id && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setOpenMenu(null)} />
+                    <div className="absolute right-0 top-8 z-50 w-36 rounded-lg border border-slate-700 bg-slate-800 py-1 shadow-xl">
+                      <button
+                        onClick={() => handleEditOpen(t)}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(t)}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/10"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Badges row */}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <StatusBadge status={t.recurringType ?? "ONCE"} />
+              <StatusBadge status={t.isActive ? "ACTIVE" : "INACTIVE"} />
+            </div>
+
+            {/* Assigned Staff */}
+            <div className="mt-3 border-t border-slate-700/40 pt-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Assigned To</p>
+              {t.staff ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-500/20 text-[10px] font-bold text-indigo-400">
+                    {t.staff.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                  </div>
+                  <span className="text-sm text-slate-300">{t.staff.name}</span>
+                </div>
+              ) : (
+                <span className="text-xs text-slate-500 italic">Unassigned</span>
+              )}
+            </div>
+
+            {/* Shift & Date */}
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <p className="text-slate-500">Shift</p>
+                <p className="text-slate-300 font-medium">{fmtTime(t.shiftStart)} – {fmtTime(t.shiftEnd)}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Effective</p>
+                <p className="text-slate-300 font-medium">
+                  {t.effectiveDate ? new Date(t.effectiveDate).toLocaleDateString() : "—"}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Full Edit Dialog */}
+      {editingTemplate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setEditingTemplate(null)}>
+          <div className="mx-4 w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-white mb-5">Edit Task Template</h2>
+            <div className="space-y-4">
+              {/* Title */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Title</label>
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Description</label>
+                <textarea
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  rows={2}
+                  className={`${inputCls} resize-none`}
+                />
+              </div>
+
+              {/* Assigned Staff */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Assigned Staff</label>
+                <select
+                  value={editForm.staffId}
+                  onChange={(e) => setEditForm({ ...editForm, staffId: e.target.value })}
+                  className={inputCls}
+                >
+                  <option value="">Unassigned</option>
+                  {staffList.map((s: any) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Shift Start / End */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Shift Start</label>
+                  <input
+                    type="time"
+                    value={editForm.shiftStart}
+                    onChange={(e) => setEditForm({ ...editForm, shiftStart: e.target.value })}
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Shift End</label>
+                  <input
+                    type="time"
+                    value={editForm.shiftEnd}
+                    onChange={(e) => setEditForm({ ...editForm, shiftEnd: e.target.value })}
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
+              {/* Recurring Type */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Recurring Type</label>
+                <select
+                  value={editForm.recurringType}
+                  onChange={(e) => setEditForm({ ...editForm, recurringType: e.target.value })}
+                  className={inputCls}
+                >
+                  <option value="">Select type</option>
+                  <option value="DAILY">Daily</option>
+                  <option value="ONCE">Once</option>
+                </select>
+              </div>
+
+              {/* Effective Date */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Effective Date</label>
+                <input
+                  type="date"
+                  value={editForm.effectiveDate}
+                  onChange={(e) => setEditForm({ ...editForm, effectiveDate: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+
+              {/* Error Message */}
+              {editError && (
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                  {editError}
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-3 pt-3">
+                <button
+                  onClick={() => setEditingTemplate(null)}
+                  className="flex-1 rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditSave}
+                  disabled={editTemplate.isPending || !editForm.title.trim()}
+                  className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-500 disabled:opacity-60"
+                >
+                  {editTemplate.isPending ? "Saving…" : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 
 const LocationDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -255,46 +599,7 @@ const LocationDetailPage: React.FC = () => {
         </div>
       )}
 
-      {activeTab === "templates" && (
-        <div className="overflow-x-auto rounded-xl border border-slate-700/60 bg-slate-900">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-700/60 bg-slate-800/50">
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Title</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Description</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Type</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Effective Date</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/80">
-              {locationInfo.taskTemplates?.length > 0 ? (
-                locationInfo.taskTemplates.map((t: any) => (
-                  <tr key={t.id} className="transition-colors hover:bg-slate-800/50">
-                    <td className="px-5 py-3.5 font-medium text-white">{t.title}</td>
-                    <td className="px-5 py-3.5 text-slate-400 max-w-xs truncate">{t.description || "—"}</td>
-                    <td className="px-5 py-3.5">
-                      <StatusBadge status={t.recurringType ?? "ONCE"} />
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-300">
-                      {t.effectiveDate ? new Date(t.effectiveDate).toLocaleDateString() : "—"}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <StatusBadge status={t.isActive ? "ACTIVE" : "INACTIVE"} />
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center text-sm text-slate-500">
-                    No task templates for this location.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {activeTab === "templates" && <TemplatesTab templates={locationInfo.taskTemplates ?? []} staffList={locationInfo.staff ?? []} />}
 
       {activeTab === "instances" && (
         <div className="overflow-x-auto rounded-xl border border-slate-700/60 bg-slate-900">

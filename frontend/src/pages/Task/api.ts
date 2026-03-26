@@ -3,11 +3,12 @@ import { client } from "@/api/client";
 export interface EditTaskTemplateInput {
   title?: string;
   description?: string;
+  locationId?: number;
   shiftStart?: string;
   shiftEnd?: string;
   recurringType?: "DAILY" | "ONCE";
   effectiveDate?: string;
-  locationId?: number;
+  recurringEndDate?: string;
 }
 
 export const editTaskTemplate = async (
