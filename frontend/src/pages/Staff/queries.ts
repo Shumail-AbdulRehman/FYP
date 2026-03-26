@@ -1,17 +1,28 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getStaff,
+  getStaffDetails,
   createStaff,
   deactivateStaff,
   assignShift,
+  editStaff,
   type CreateStaffInput,
   type AssignShiftInput,
+  type EditStaffInput,
 } from "./api";
 
 export const useGetStaff = () => {
   return useQuery({
     queryKey: ["staff"],
     queryFn: getStaff,
+  });
+};
+
+export const useGetStaffDetails = (id: number) => {
+  return useQuery({
+    queryKey: ["staff", "details", id],
+    queryFn: () => getStaffDetails(id),
+    enabled: !!id,
   });
 };
 
@@ -37,5 +48,17 @@ export const useAssignShift = () => {
     mutationFn: ({ id, data }: { id: number; data: AssignShiftInput }) =>
       assignShift(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["staff"] }),
+  });
+};
+
+export const useEditStaff = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: EditStaffInput }) =>
+      editStaff(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["staff"] });
+      qc.invalidateQueries({ queryKey: ["location"] });
+    },
   });
 };

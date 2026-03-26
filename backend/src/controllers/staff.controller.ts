@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
-import { createStaffSchema } from "../validations/staff.validation.js";
-import { staffLoginSchema } from "../validations/staff.validation.js";
+import { createStaffSchema, editStaffSchema, staffLoginSchema } from "../validations/staff.validation.js";
 import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -272,3 +271,156 @@ export const getProfile = async (req: Request, res: Response) => {
   res.status(200).json(new ApiResponse(200, staff, "Profile fetched successfully"));
 };
 
+export const editStaff = async (req: Request, res: Response) => {
+  const staffId = Number(req.params.id);
+  if (isNaN(staffId)) throw new ApiError(400, "Invalid staff id");
+
+  const result = editStaffSchema.safeParse(req.body);
+
+  if (!result.success) {
+    const errors = result.error.issues.map(e => ({
+      field: e.path.join("."),
+      message: e.message
+    }));
+    throw new ApiError(400, "Validation failed", errors);
+  }
+
+  const staff = await prisma.staff.findUnique({ where: { id: staffId } });
+
+  if (!staff || staff.companyId !== req.user!.companyId) {
+    throw new ApiError(404, "Staff not found in your company");
+  }
+
+  if (!staff.isActive) {
+    throw new ApiError(400, "Cannot edit deactivated staff");
+  }
+
+  if (result.data.email && result.data.email !== staff.email) {
+    const existing = await prisma.staff.findUnique({ where: { email: result.data.email } });
+    if (existing) {
+      throw new ApiError(409, "A staff member with this email already exists");
+    }
+  }
+
+  console.log("staff data::",result.data);
+
+ if (result.data.shiftStart || result.data.shiftEnd) {
+  
+  const newStart = result.data.shiftStart ?? staff.shiftStart;
+  const newEnd = result.data.shiftEnd ?? staff.shiftEnd;
+
+  if (newStart && newEnd) {
+   
+    const staffTemplates = await prisma.taskTemplate.findMany({
+      where: {
+        staffId,
+        isActive: true,
+      },
+    });
+
+    const newStartMin = newStart.getUTCHours() * 60 + newStart.getUTCMinutes();
+    const newEndMin = newEnd.getUTCHours() * 60 + newEnd.getUTCMinutes();
+    const isOvernightShift = newEndMin < newStartMin;
+
+    const conflicts = staffTemplates.filter((t) => {
+      const tStartMin = t.shiftStart.getUTCHours() * 60 + t.shiftStart.getUTCMinutes();
+      const tEndMin = t.shiftEnd.getUTCHours() * 60 + t.shiftEnd.getUTCMinutes();
+
+      if (isOvernightShift) {
+        return !(tStartMin >= newStartMin || tEndMin <= newEndMin);
+      }
+      return !(tStartMin >= newStartMin && tEndMin <= newEndMin);
+    });
+
+    if (conflicts.length > 0) {
+      const names = conflicts.map((c) => `"${c.title}"`).join(", ");
+      throw new ApiError(
+        400,
+        `Cannot update shift: ${names} task template(s) fall outside the new shift window. Remove or reassign them first.`
+      );
+    }
+  }
+}
+
+
+  const updated = await prisma.staff.update({
+    where: { id: staffId },
+    data: result.data,
+    select: {
+      id: true, name: true, email: true, role: true, isActive: true,
+      companyId: true, locationId: true, shiftStart: true, shiftEnd: true,
+      createdAt: true, updatedAt: true,
+    }
+  });
+
+  res.status(200).json(new ApiResponse(200, updated, "Staff updated successfully"));
+};
+
+export const getStaffDetails = async (req: Request, res: Response) => {
+  const staffId = Number(req.params.id);
+  if (isNaN(staffId)) throw new ApiError(400, "Invalid staff id");
+
+  const staff = await prisma.staff.findUnique({
+    where: { id: staffId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      isActive: true,
+      companyId: true,
+      locationId: true,
+      shiftStart: true,
+      shiftEnd: true,
+      createdAt: true,
+      updatedAt: true,
+      location: { select: { id: true, name: true, address: true } },
+      taskTemplates: {
+        where: { isActive: true },
+        include: { location: { select: { id: true, name: true } } },
+        orderBy: { createdAt: "desc" },
+      },
+      taskInstances: {
+        where: { isActive: true },
+        orderBy: { date: "desc" },
+        take: 50,
+        include: { location: { select: { id: true, name: true } } },
+      },
+      attendances: {
+        orderBy: { date: "desc" },
+        take: 50,
+        include: { location: { select: { id: true, name: true } } },
+      },
+    },
+  });
+
+  if (!staff || staff.companyId !== req.user!.companyId) {
+    throw new ApiError(404, "Staff not found in your company");
+  }
+
+  // Compute summary stats
+  const taskStats = {
+    totalTemplates: staff.taskTemplates.length,
+    totalInstances: staff.taskInstances.length,
+    completed: staff.taskInstances.filter((i) => i.status === "COMPLETED").length,
+    pending: staff.taskInstances.filter((i) => i.status === "PENDING").length,
+    inProgress: staff.taskInstances.filter((i) => i.status === "IN_PROGRESS").length,
+    missed: staff.taskInstances.filter((i) => i.status === "MISSED").length,
+    late: staff.taskInstances.filter((i) => i.isLate).length,
+  };
+
+  const attendanceStats = {
+    totalRecords: staff.attendances.length,
+    present: staff.attendances.filter((a) => a.status === "CHECKED_IN" || a.status === "CHECKED_OUT").length,
+    absent: staff.attendances.filter((a) => a.status === "ABSENT").length,
+    late: staff.attendances.filter((a) => a.status === "LATE" || a.isLateCheckIn).length,
+  };
+
+  res.status(200).json(
+    new ApiResponse(200, {
+      ...staff,
+      taskStats,
+      attendanceStats,
+    }, "Staff details fetched successfully")
+  );
+};

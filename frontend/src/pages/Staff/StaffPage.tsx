@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { useGetStaff, useCreateStaff, useDeactivateStaff } from "./queries";
+import { useGetStaff, useCreateStaff, useDeactivateStaff, useEditStaff } from "./queries";
 import { useGetLocations } from "../Location/queries";
+import { useAssignStaffToLocation } from "../Assignment/queries";
 import PageHeader from "@/components/common/PageHeader";
 import DataTable from "@/components/common/DataTable";
 import StatusBadge from "@/components/common/StatusBadge";
@@ -14,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Users, Plus, Search } from "lucide-react";
+import { Users, Plus, Search, Pencil, MapPin } from "lucide-react";
 
 interface StaffMember {
   id: number;
@@ -41,14 +43,38 @@ const fmtTime = (d: string | null) => {
   });
 };
 
+const toTimeValue = (iso: string | null) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
+
+const inputCls =
+  "w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+
 export default function StaffPage() {
   const { data, isLoading } = useGetStaff();
   const locationsQuery = useGetLocations();
   const createStaff = useCreateStaff();
   const deactivateStaff = useDeactivateStaff();
+  const editStaffMutation = useEditStaff();
+  const assignLocation = useAssignStaffToLocation();
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
+  const [locationFilter, setLocationFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Edit staff state
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+    shiftStart: "",
+    shiftEnd: "",
+    locationId: "" as string,
+  });
 
   const {
     register,
@@ -62,14 +88,89 @@ export default function StaffPage() {
   const staff: StaffMember[] = data?.data ?? [];
   const locations = locationsQuery.data?.data ?? [];
 
-  const filtered = staff.filter(
-    (s) =>
+  // Filter by search + location
+  const filtered = staff.filter((s) => {
+    const matchesSearch =
       s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.email.toLowerCase().includes(search.toLowerCase())
-  );
+      s.email.toLowerCase().includes(search.toLowerCase());
+    const matchesLocation =
+      locationFilter === "all"
+        ? true
+        : locationFilter === "unassigned"
+          ? s.locationId === null
+          : s.locationId === Number(locationFilter);
+    return matchesSearch && matchesLocation;
+  });
 
   // Map locationId → name
   const locMap = new Map(locations.map((l: any) => [l.id, l.name]));
+
+  const extractError = (err: any) =>
+    err?.response?.data?.message ||
+    err?.response?.data?.errors?.map((e: any) => e.message).join(", ") ||
+    err?.message ||
+    "An error occurred";
+
+  const handleEditOpen = (s: StaffMember) => {
+    setEditError(null);
+    setEditingStaff(s);
+    setEditForm({
+      name: s.name,
+      email: s.email,
+      shiftStart: toTimeValue(s.shiftStart),
+      shiftEnd: toTimeValue(s.shiftEnd),
+      locationId: s.locationId ? String(s.locationId) : "",
+    });
+  };
+
+  const handleEditSave = async () => {
+    if (!editingStaff) return;
+    setEditError(null);
+
+    try {
+      // Build staff-edit payload (name, email, shift)
+      const payload: Record<string, any> = {};
+      if (editForm.name !== editingStaff.name) payload.name = editForm.name;
+      if (editForm.email !== editingStaff.email) payload.email = editForm.email;
+      if (editForm.shiftStart && editForm.shiftStart !== toTimeValue(editingStaff.shiftStart)) {
+        const base = editingStaff.shiftStart ? new Date(editingStaff.shiftStart) : new Date();
+        const [h, m] = editForm.shiftStart.split(":").map(Number);
+        base.setHours(h, m, 0, 0);
+        payload.shiftStart = base.toISOString();
+      }
+      if (editForm.shiftEnd && editForm.shiftEnd !== toTimeValue(editingStaff.shiftEnd)) {
+        const base = editingStaff.shiftEnd ? new Date(editingStaff.shiftEnd) : new Date();
+        const [h, m] = editForm.shiftEnd.split(":").map(Number);
+        base.setHours(h, m, 0, 0);
+        payload.shiftEnd = base.toISOString();
+      }
+
+      // Update staff info if changed
+      if (Object.keys(payload).length > 0) {
+        await new Promise<void>((resolve, reject) => {
+          editStaffMutation.mutate(
+            { id: editingStaff.id, data: payload },
+            { onSuccess: () => resolve(), onError: (err) => reject(err) }
+          );
+        });
+      }
+
+      // Assign to location if changed (via assignment endpoint)
+      const newLocationId = editForm.locationId ? Number(editForm.locationId) : null;
+      if (newLocationId && newLocationId !== editingStaff.locationId) {
+        await new Promise<void>((resolve, reject) => {
+          assignLocation.mutate(
+            { staffId: editingStaff.id, locationId: newLocationId },
+            { onSuccess: () => resolve(), onError: (err) => reject(err) }
+          );
+        });
+      }
+
+      setEditingStaff(null);
+    } catch (err: unknown) {
+      setEditError(extractError(err));
+    }
+  };
 
   const columns: Column<StaffMember>[] = [
     {
@@ -100,7 +201,7 @@ export default function StaffPage() {
       render: (s) =>
         s.locationId ? (
           <span className="rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-xs font-medium text-indigo-400">
-            {locMap.get(s.locationId) ?? `#${s.locationId}`}
+            {(locMap.get(s.locationId) as string) ?? `#${s.locationId}`}
           </span>
         ) : (
           <span className="text-slate-500">Unassigned</span>
@@ -127,6 +228,15 @@ export default function StaffPage() {
       header: "Actions",
       render: (s) => (
         <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditOpen(s);
+            }}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-indigo-400 transition-colors hover:bg-indigo-500/10"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -191,7 +301,7 @@ export default function StaffPage() {
                   </label>
                   <input
                     {...register("name", { required: "Name is required" })}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className={inputCls}
                     placeholder="John Smith"
                   />
                   {errors.name && (
@@ -208,7 +318,7 @@ export default function StaffPage() {
                   <input
                     type="email"
                     {...register("email", { required: "Email is required" })}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className={inputCls}
                     placeholder="john@company.com"
                   />
                   {errors.email && (
@@ -227,7 +337,7 @@ export default function StaffPage() {
                     {...register("password", {
                       required: "Password is required",
                     })}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className={inputCls}
                     placeholder="••••••••"
                   />
                   {errors.password && (
@@ -243,7 +353,7 @@ export default function StaffPage() {
                   </label>
                   <select
                     {...register("locationId")}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className={inputCls}
                   >
                     <option value="">No location</option>
                     {locations.map((l: any) => (
@@ -279,16 +389,35 @@ export default function StaffPage() {
         }
       />
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search staff by name or email…"
-          className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        />
+      {/* Search + Location Filter */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search staff by name or email…"
+            className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div className="relative">
+          <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500 pointer-events-none" />
+          <select
+            value={locationFilter}
+            onChange={(e) => setLocationFilter(e.target.value)}
+            className="appearance-none rounded-lg border border-slate-700 bg-slate-900 py-2.5 pl-10 pr-8 text-sm text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          >
+            <option value="all">All Locations</option>
+            <option value="unassigned">Unassigned</option>
+            {locations.map((l: any) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Table */}
@@ -298,7 +427,109 @@ export default function StaffPage() {
         rowKey={(s) => s.id}
         emptyIcon={<Users className="h-12 w-12" />}
         emptyMessage="No staff members found."
+        onRowClick={(s) => navigate(`/staff/${s.id}`)}
       />
+
+      {/* Edit Staff Dialog */}
+      {editingStaff && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setEditingStaff(null)}
+        >
+          <div
+            className="mx-4 w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-white mb-5">Edit Staff</h2>
+            <div className="space-y-4">
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Name</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  className={inputCls}
+                />
+              </div>
+
+              {/* Location */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1.5">Location</label>
+                <select
+                  value={editForm.locationId}
+                  onChange={(e) => setEditForm({ ...editForm, locationId: e.target.value })}
+                  className={inputCls}
+                >
+                  <option value="">Unassigned</option>
+                  {locations.map((l: any) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Shift Start / End */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Shift Start</label>
+                  <input
+                    type="time"
+                    value={editForm.shiftStart}
+                    onChange={(e) => setEditForm({ ...editForm, shiftStart: e.target.value })}
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Shift End</label>
+                  <input
+                    type="time"
+                    value={editForm.shiftEnd}
+                    onChange={(e) => setEditForm({ ...editForm, shiftEnd: e.target.value })}
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
+              {/* Error */}
+              {editError && (
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                  {editError}
+                </div>
+              )}
+
+              {/* Buttons */}
+              <div className="flex gap-3 pt-3">
+                <button
+                  onClick={() => setEditingStaff(null)}
+                  className="flex-1 rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditSave}
+                  disabled={editStaffMutation.isPending || assignLocation.isPending || !editForm.name.trim() || !editForm.email.trim()}
+                  className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-500 disabled:opacity-60"
+                >
+                  {editStaffMutation.isPending || assignLocation.isPending ? "Saving…" : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

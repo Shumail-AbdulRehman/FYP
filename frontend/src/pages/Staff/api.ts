@@ -14,6 +14,13 @@ export interface AssignShiftInput {
   shiftEnd: string;
 }
 
+export interface EditStaffInput {
+  name?: string;
+  email?: string;
+  shiftStart?: string;
+  shiftEnd?: string;
+}
+
 export const getStaff = async () => {
   const res = await client.get("/staff/");
   return res.data;
@@ -21,6 +28,11 @@ export const getStaff = async () => {
 
 export const getStaffById = async (id: number) => {
   const res = await client.get(`/staff/${id}`);
+  return res.data;
+};
+
+export const getStaffDetails = async (id: number) => {
+  const res = await client.get(`/staff/details/${id}`);
   return res.data;
 };
 
@@ -51,5 +63,10 @@ export const assignStaffToLocation = async (
   const res = await client.patch(
     `/assignment/staff/${staffId}/location/${locationId}`
   );
+  return res.data;
+};
+
+export const editStaff = async (id: number, data: EditStaffInput) => {
+  const res = await client.patch(`/staff/${id}`, data);
   return res.data;
 };

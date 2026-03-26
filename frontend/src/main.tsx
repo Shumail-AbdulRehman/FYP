@@ -14,6 +14,7 @@ import LocationsPage from './pages/Location/LocationsPage.tsx';
 import LocationDetailPage from './pages/Location/LocationDetailPage.tsx';
 import DashboardPage from './pages/Dashboard/DashboardPage.tsx';
 import StaffPage from './pages/Staff/StaffPage.tsx';
+import StaffDetailPage from './pages/Staff/StaffDetailPage.tsx';
 import AttendancePage from './pages/Attendance/AttendancePage.tsx';
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const router = createBrowserRouter([
           { path: 'locations', element: <LocationsPage /> },
           { path: 'locations/:id', element: <LocationDetailPage /> },
           { path: 'staff', element: <StaffPage /> },
+          { path: 'staff/:id', element: <StaffDetailPage /> },
           { path: 'attendance', element: <AttendancePage /> },
         ],
       },

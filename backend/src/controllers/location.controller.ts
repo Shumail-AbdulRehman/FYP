@@ -255,7 +255,7 @@ export const getLocationStatsById = async (req: Request, res: Response) => {
 ]);
 
 
-console.log("location info is:", locationInfo);
+
 
   res.status(200).json(new ApiResponse(200, {locationInfo,taskStats}, "Location stats fetched successfully"));
 };
