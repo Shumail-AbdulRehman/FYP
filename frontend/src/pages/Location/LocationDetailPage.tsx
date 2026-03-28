@@ -44,17 +44,17 @@ const FILTERS: { key: FilterKey; label: string; toFilter: () => LocationStatsFil
 /* ── stat card (local) ── */
 function StatCard({ label, value, icon: Icon, color }: { label: string; value: string | number; icon: React.ElementType; color: string }) {
   const colors: Record<string, string> = {
-    indigo: "bg-indigo-500/20 text-indigo-400",
-    cyan: "bg-cyan-500/20 text-cyan-400",
-    purple: "bg-purple-500/20 text-purple-400",
-    emerald: "bg-emerald-500/20 text-emerald-400",
+    indigo: "bg-teal-100 text-teal-600",
+    cyan: "bg-sky-100 text-sky-600",
+    purple: "bg-violet-100 text-violet-600",
+    emerald: "bg-emerald-100 text-emerald-600",
   };
   return (
-    <div className="rounded-xl border border-slate-700/60 bg-slate-900 p-4">
+    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs text-slate-400">{label}</p>
-          <p className="mt-1 text-2xl font-bold text-white">{value}</p>
+          <p className="text-xs text-gray-500">{label}</p>
+          <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
         </div>
         <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${colors[color] ?? colors.indigo}`}>
           <Icon className="h-4 w-4" />
@@ -191,13 +191,13 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
     }
   };
 
-  const inputCls = "w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  const inputCls = "w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500";
 
   if (templates.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-slate-700/60 bg-slate-900 py-16 text-center">
-        <ClipboardList className="h-12 w-12 text-slate-500 mb-4" />
-        <p className="text-sm text-slate-400">No task templates for this location.</p>
+      <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 text-center">
+        <ClipboardList className="h-12 w-12 text-gray-400 mb-4" />
+        <p className="text-sm text-gray-500">No task templates for this location.</p>
       </div>
     );
   }
@@ -208,14 +208,14 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
         {templates.map((t: any) => (
           <div
             key={t.id}
-            className="relative rounded-xl border border-slate-700/60 bg-slate-900 p-5 transition-all hover:border-slate-600 hover:shadow-lg hover:shadow-indigo-500/5"
+            className="relative rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
           >
             {/* Header: title + 3-dot menu */}
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-semibold text-white truncate">{t.title}</h3>
+                <h3 className="text-sm font-semibold text-gray-900 truncate">{t.title}</h3>
                 {t.description && (
-                  <p className="mt-0.5 text-xs text-slate-500 line-clamp-2">{t.description}</p>
+                  <p className="mt-0.5 text-xs text-gray-400 line-clamp-2">{t.description}</p>
                 )}
               </div>
 
@@ -223,7 +223,7 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
               <div className="relative shrink-0">
                 <button
                   onClick={() => setOpenMenu(openMenu === t.id ? null : t.id)}
-                  className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+                  className="rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
                 >
                   <MoreVertical className="h-4 w-4" />
                 </button>
@@ -231,17 +231,17 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
                 {openMenu === t.id && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setOpenMenu(null)} />
-                    <div className="absolute right-0 top-8 z-50 w-36 rounded-lg border border-slate-700 bg-slate-800 py-1 shadow-xl">
+                    <div className="absolute right-0 top-8 z-50 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-xl">
                       <button
                         onClick={() => handleEditOpen(t)}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(t)}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 transition-colors hover:bg-red-500/10"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         Delete
@@ -259,29 +259,29 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
             </div>
 
             {/* Assigned Staff */}
-            <div className="mt-3 border-t border-slate-700/40 pt-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Assigned To</p>
+            <div className="mt-3 border-t border-gray-100 pt-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Assigned To</p>
               {t.staff ? (
                 <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-500/20 text-[10px] font-bold text-indigo-400">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-50 text-[10px] font-bold text-teal-600">
                     {t.staff.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
-                  <span className="text-sm text-slate-300">{t.staff.name}</span>
+                  <span className="text-sm text-gray-600">{t.staff.name}</span>
                 </div>
               ) : (
-                <span className="text-xs text-slate-500 italic">Unassigned</span>
+                <span className="text-xs text-gray-400 italic">Unassigned</span>
               )}
             </div>
 
             {/* Shift & Date */}
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
               <div>
-                <p className="text-slate-500">Shift</p>
-                <p className="text-slate-300 font-medium">{fmtTime(t.shiftStart)} – {fmtTime(t.shiftEnd)}</p>
+                <p className="text-gray-400">Shift</p>
+                <p className="text-gray-600 font-medium">{fmtTime(t.shiftStart)} – {fmtTime(t.shiftEnd)}</p>
               </div>
               <div>
-                <p className="text-slate-500">Effective</p>
-                <p className="text-slate-300 font-medium">
+                <p className="text-gray-400">Effective</p>
+                <p className="text-gray-600 font-medium">
                   {t.effectiveDate ? new Date(t.effectiveDate).toLocaleDateString() : "—"}
                 </p>
               </div>
@@ -292,13 +292,13 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
 
       {/* Full Edit Dialog */}
       {editingTemplate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setEditingTemplate(null)}>
-          <div className="mx-4 w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-white mb-5">Edit Task Template</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setEditingTemplate(null)}>
+          <div className="mx-4 w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-gray-900 mb-5">Edit Task Template</h2>
             <div className="space-y-4">
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Title</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">Title</label>
                 <input
                   type="text"
                   value={editForm.title}
@@ -309,7 +309,7 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Description</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">Description</label>
                 <textarea
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
@@ -320,7 +320,7 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
 
               {/* Assigned Staff */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Assigned Staff</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">Assigned Staff</label>
                 <select
                   value={editForm.staffId}
                   onChange={(e) => setEditForm({ ...editForm, staffId: e.target.value })}
@@ -338,7 +338,7 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
               {/* Shift Start / End */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Shift Start</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1.5">Shift Start</label>
                   <input
                     type="time"
                     value={editForm.shiftStart}
@@ -347,7 +347,7 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Shift End</label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1.5">Shift End</label>
                   <input
                     type="time"
                     value={editForm.shiftEnd}
@@ -359,7 +359,7 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
 
               {/* Recurring Type */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Recurring Type</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">Recurring Type</label>
                 <select
                   value={editForm.recurringType}
                   onChange={(e) => setEditForm({ ...editForm, recurringType: e.target.value })}
@@ -373,7 +373,7 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
 
               {/* Effective Date */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Effective Date</label>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">Effective Date</label>
                 <input
                   type="date"
                   value={editForm.effectiveDate}
@@ -384,7 +384,7 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
 
               {/* Error Message */}
               {editError && (
-                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                   {editError}
                 </div>
               )}
@@ -393,14 +393,14 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
               <div className="flex gap-3 pt-3">
                 <button
                   onClick={() => setEditingTemplate(null)}
-                  className="flex-1 rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800"
+                  className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleEditSave}
                   disabled={editTemplate.isPending || !editForm.title.trim()}
-                  className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-500 disabled:opacity-60"
+                  className="flex-1 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors hover:bg-teal-700 disabled:opacity-60"
                 >
                   {editTemplate.isPending ? "Saving…" : "Save Changes"}
                 </button>
@@ -440,9 +440,9 @@ const LocationDetailPage: React.FC = () => {
     return (
       <div className="flex h-64 items-center justify-center">
         <div className="flex flex-col items-center gap-2 text-center">
-          <XCircle className="h-10 w-10 text-red-400" />
-          <p className="text-base font-semibold text-white">Location not found</p>
-          <button onClick={() => navigate(-1)} className="mt-2 text-sm text-indigo-400 hover:underline">
+          <XCircle className="h-10 w-10 text-red-600" />
+          <p className="text-base font-semibold text-gray-900">Location not found</p>
+          <button onClick={() => navigate(-1)} className="mt-2 text-sm text-teal-600 hover:underline">
             ← Go back
           </button>
         </div>
@@ -454,23 +454,23 @@ const LocationDetailPage: React.FC = () => {
     <div className="space-y-6 max-w-6xl">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm">
-        <Link to="/locations" className="text-slate-400 hover:text-white transition-colors">
+        <Link to="/locations" className="text-gray-500 hover:text-gray-900 transition-colors">
           Locations
         </Link>
-        <span className="text-slate-600">/</span>
-        <span className="text-white font-medium">{locationInfo.name}</span>
+        <span className="text-gray-400">/</span>
+        <span className="text-gray-900 font-medium">{locationInfo.name}</span>
       </div>
 
       {/* Location Header */}
-      <div className="rounded-xl border border-slate-700/60 bg-slate-900 p-6">
+      <div className="rounded-xl border border-gray-200 bg-white p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-500/20">
-              <MapPin className="h-7 w-7 text-indigo-400" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-teal-50">
+              <MapPin className="h-7 w-7 text-teal-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">{locationInfo.name}</h1>
-              <p className="mt-0.5 flex items-center gap-1.5 text-sm text-slate-400">
+              <h1 className="text-2xl font-bold text-gray-900">{locationInfo.name}</h1>
+              <p className="mt-0.5 flex items-center gap-1.5 text-sm text-gray-500">
                 <Building2 className="h-3.5 w-3.5" />
                 {locationInfo.address}
               </p>
@@ -480,14 +480,14 @@ const LocationDetailPage: React.FC = () => {
         </div>
 
         {/* Geo pills */}
-        <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-700/60 pt-4">
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs text-slate-400">
+        <div className="mt-4 flex flex-wrap gap-2 border-t border-gray-200 pt-4">
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-xs text-gray-500">
             <Navigation className="h-3 w-3" /> Lat: {fmtCoord(locationInfo.latitude)}
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs text-slate-400">
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-xs text-gray-500">
             <Navigation className="h-3 w-3 rotate-90" /> Lng: {fmtCoord(locationInfo.longitude)}
           </span>
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs text-slate-400">
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-xs text-gray-500">
             <Radius className="h-3 w-3" /> Radius: {locationInfo.radiusMeters}m
           </span>
         </div>
@@ -495,16 +495,16 @@ const LocationDetailPage: React.FC = () => {
 
       {/* Date filter + stats */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-900 p-1">
-          <Calendar className="ml-2 h-4 w-4 text-slate-500 shrink-0" />
+        <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white p-1">
+          <Calendar className="ml-2 h-4 w-4 text-gray-400 shrink-0" />
           {FILTERS.map((f) => (
             <button
               key={f.key}
               onClick={() => setActiveFilter(f.key)}
               className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
                 f.key === activeFilter
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                  ? "bg-teal-600 text-gray-900 shadow-sm"
+                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
               }`}
             >
               {f.key === activeFilter && isFetching && <RefreshCw className="h-3 w-3 animate-spin" />}
@@ -528,14 +528,14 @@ const LocationDetailPage: React.FC = () => {
           {taskStats.map((entry) => (
             <div key={entry.status} className="flex items-center gap-2">
               <StatusBadge status={entry.status} />
-              <span className="text-sm font-semibold text-white">{entry._count.status}</span>
+              <span className="text-sm font-semibold text-gray-900">{entry._count.status}</span>
             </div>
           ))}
         </div>
       )}
 
       {/* Tabs */}
-      <div className="border-b border-slate-700/60">
+      <div className="border-b border-gray-200">
         <div className="flex gap-0">
           {TABS.map(({ key, label, icon: Icon }) => (
             <button
@@ -543,8 +543,8 @@ const LocationDetailPage: React.FC = () => {
               onClick={() => setActiveTab(key)}
               className={`inline-flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-medium transition-colors ${
                 activeTab === key
-                  ? "border-indigo-500 text-white"
-                  : "border-transparent text-slate-400 hover:border-slate-600 hover:text-slate-300"
+                  ? "border-indigo-500 text-gray-900"
+                  : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-600"
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -556,30 +556,30 @@ const LocationDetailPage: React.FC = () => {
 
       {/* Tab Content */}
       {activeTab === "staff" && (
-        <div className="overflow-x-auto rounded-xl border border-slate-700/60 bg-slate-900">
+        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-700/60 bg-slate-800/50">
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Name</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Email</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Shift</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Status</th>
+              <tr className="border-b border-gray-200 bg-gray-50/80">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Name</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Email</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Shift</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/80">
+            <tbody className="divide-y divide-gray-100">
               {locationInfo.staff?.length > 0 ? (
                 locationInfo.staff.map((s: any) => (
-                  <tr key={s.id} className="transition-colors hover:bg-slate-800/50">
+                  <tr key={s.id} className="transition-colors hover:bg-gray-100/50">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500/20 text-xs font-bold text-indigo-400">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-50 text-xs font-bold text-teal-600">
                           {s.name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
                         </div>
-                        <span className="font-medium text-white">{s.name}</span>
+                        <span className="font-medium text-gray-900">{s.name}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-slate-400">{s.email}</td>
-                    <td className="px-5 py-3.5 text-slate-300">
+                    <td className="px-5 py-3.5 text-gray-500">{s.email}</td>
+                    <td className="px-5 py-3.5 text-gray-600">
                       {fmtTime(s.shiftStart)} – {fmtTime(s.shiftEnd)}
                     </td>
                     <td className="px-5 py-3.5">
@@ -589,7 +589,7 @@ const LocationDetailPage: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-5 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={4} className="px-5 py-8 text-center text-sm text-gray-400">
                     No staff assigned to this location.
                   </td>
                 </tr>
@@ -602,26 +602,26 @@ const LocationDetailPage: React.FC = () => {
       {activeTab === "templates" && <TemplatesTab templates={locationInfo.taskTemplates ?? []} staffList={locationInfo.staff ?? []} />}
 
       {activeTab === "instances" && (
-        <div className="overflow-x-auto rounded-xl border border-slate-700/60 bg-slate-900">
+        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-700/60 bg-slate-800/50">
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Title</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Date</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Shift</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Status</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Late</th>
+              <tr className="border-b border-gray-200 bg-gray-50/80">
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Title</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Date</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Shift</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Late</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/80">
+            <tbody className="divide-y divide-gray-100">
               {locationInfo.taskInstances?.length > 0 ? (
                 locationInfo.taskInstances.map((ti: any) => (
-                  <tr key={ti.id} className="transition-colors hover:bg-slate-800/50">
-                    <td className="px-5 py-3.5 font-medium text-white">{ti.title}</td>
-                    <td className="px-5 py-3.5 text-slate-300">
+                  <tr key={ti.id} className="transition-colors hover:bg-gray-100/50">
+                    <td className="px-5 py-3.5 font-medium text-gray-900">{ti.title}</td>
+                    <td className="px-5 py-3.5 text-gray-600">
                       {new Date(ti.date).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
                     </td>
-                    <td className="px-5 py-3.5 text-slate-300">
+                    <td className="px-5 py-3.5 text-gray-600">
                       {fmtTime(ti.shiftStart)} – {fmtTime(ti.shiftEnd)}
                     </td>
                     <td className="px-5 py-3.5">
@@ -638,7 +638,7 @@ const LocationDetailPage: React.FC = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={5} className="px-5 py-8 text-center text-sm text-gray-400">
                     No task instances for this period.
                   </td>
                 </tr>
