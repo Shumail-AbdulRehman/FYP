@@ -1,23 +1,23 @@
 const COLORS: Record<string, string> = {
   // Task statuses
-  PENDING:              "bg-slate-500/20 text-slate-300",
-  IN_PROGRESS:          "bg-amber-500/20 text-amber-400",
-  COMPLETED:            "bg-emerald-500/20 text-emerald-400",
-  MISSED:               "bg-red-500/20 text-red-400",
-  NOT_COMPLETED_INTIME: "bg-orange-500/20 text-orange-400",
-  CANCELLED:            "bg-slate-600/20 text-slate-400",
+  PENDING:              "bg-gray-100 text-gray-600",
+  IN_PROGRESS:          "bg-amber-50 text-amber-700",
+  COMPLETED:            "bg-emerald-50 text-emerald-700",
+  MISSED:               "bg-red-50 text-red-700",
+  NOT_COMPLETED_INTIME: "bg-orange-50 text-orange-700",
+  CANCELLED:            "bg-gray-100 text-gray-500",
 
   // Attendance statuses
-  CHECKED_OUT:          "bg-emerald-500/20 text-emerald-400",
-  CHECKED_IN:           "bg-blue-500/20 text-blue-400",
-  LATE:                 "bg-amber-500/20 text-amber-400",
-  ABSENT:               "bg-red-500/20 text-red-400",
+  CHECKED_OUT:          "bg-emerald-50 text-emerald-700",
+  CHECKED_IN:           "bg-blue-50 text-blue-700",
+  LATE:                 "bg-amber-50 text-amber-700",
+  ABSENT:               "bg-red-50 text-red-700",
 
   // Generic
-  ACTIVE:               "bg-emerald-500/20 text-emerald-400",
-  INACTIVE:             "bg-slate-600/20 text-slate-400",
-  DAILY:                "bg-indigo-500/20 text-indigo-400",
-  ONCE:                 "bg-slate-500/20 text-slate-300",
+  ACTIVE:               "bg-emerald-50 text-emerald-700",
+  INACTIVE:             "bg-gray-100 text-gray-500",
+  DAILY:                "bg-teal-50 text-teal-700",
+  ONCE:                 "bg-gray-100 text-gray-600",
 };
 
 interface StatusBadgeProps {
@@ -26,7 +26,7 @@ interface StatusBadgeProps {
 }
 
 export default function StatusBadge({ status, className = "" }: StatusBadgeProps) {
-  const color = COLORS[status] ?? "bg-slate-500/20 text-slate-300";
+  const color = COLORS[status] ?? "bg-gray-100 text-gray-600";
   const label = status.replace(/_/g, " ");
 
   return (
