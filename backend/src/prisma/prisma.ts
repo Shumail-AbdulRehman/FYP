@@ -7,7 +7,7 @@ import bcrypt from "bcrypt";
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 
-const prisma = new PrismaClient({ adapter }).$extends({
+const prisma = new PrismaClient({ adapter, log: [ 'info', 'warn', 'error'] }).$extends({
     query: {
         manager: {
             async create({ args, query }) {

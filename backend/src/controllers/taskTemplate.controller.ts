@@ -23,6 +23,8 @@ export const createTaskTemplate = async (req: Request, res: Response) => {
     throw new ApiError(404, "Location not found in your company");
   }
 
+  
+
   const taskTemplate = await prisma.taskTemplate.create({
     data: result.data
   });
@@ -44,9 +46,11 @@ export const editTaskTemplate = async (req: Request, res: Response) => {
     throw new ApiError(400, "Validation failed", errors);
   }
 
+  console.log("task template data is::",result.data);
+
   const template = await prisma.taskTemplate.findUnique({
     where: { id: taskTemplateId },
-    include: { location: true }
+    include: { location: true , staff:true}
   });
 
   if (!template || template.location.companyId !== req.user!.companyId) {
@@ -66,6 +70,13 @@ export const editTaskTemplate = async (req: Request, res: Response) => {
       throw new ApiError(404, "New location not found in your company");
     }
   }
+
+  // if(result.data.shiftEnd || result.data.shiftStart)
+  // {
+
+  // }
+
+  console.log("template::",template);
 
   const updated = await prisma.taskTemplate.update({
     where: { id: taskTemplateId },
