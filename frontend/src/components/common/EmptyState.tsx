@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Inbox } from "lucide-react";
+import SurfaceCard from "./SurfaceCard";
 
 interface EmptyStateProps {
   icon?: ReactNode;
@@ -13,12 +14,14 @@ export default function EmptyState({
   action,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 px-6 text-center">
-      <div className="mb-4 text-gray-400">
+    <SurfaceCard contentClassName="py-16">
+      <div className="flex flex-col items-center justify-center px-6 text-center">
+      <div className="mb-4 rounded-2xl bg-muted p-4 text-muted-foreground">
         {icon ?? <Inbox className="h-12 w-12" />}
       </div>
-      <p className="text-sm text-gray-500">{message}</p>
+      <p className="text-sm text-muted-foreground">{message}</p>
       {action && <div className="mt-4">{action}</div>}
-    </div>
+      </div>
+    </SurfaceCard>
   );
 }

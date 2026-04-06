@@ -125,6 +125,7 @@ model TaskInstance {
 
   @@index([locationId, isActive, date])  
   @@index([locationId, status]) 
+  @@unique([templateId, date])
 }
 
 
@@ -147,6 +148,7 @@ model Attendance {
 
     @@index([locationId, date])
   @@index([staffId])
+  @@unique([staffId, date])
 }
 
 enum AttendanceStatus {
@@ -154,6 +156,7 @@ enum AttendanceStatus {
   CHECKED_IN    
   CHECKED_OUT   
   LATE          
+  MISSED_CHECKOUT
 }
 
 
@@ -175,4 +178,3 @@ enum TaskStatus {
   MISSED
   CANCELLED
 }
-

@@ -1,18 +1,20 @@
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
   title: string;
   subtitle?: string;
   action?: ReactNode;
+  className?: string;
 }
 
-export default function PageHeader({ title, subtitle, action }: PageHeaderProps) {
+export default function PageHeader({ title, subtitle, action, className }: PageHeaderProps) {
   return (
-    <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+    <div className={cn("flex items-start justify-between gap-4 flex-wrap", className)}>
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{title}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">{title}</h1>
         {subtitle && (
-          <p className="mt-0.5 text-sm text-gray-500">{subtitle}</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{subtitle}</p>
         )}
       </div>
       {action && <div>{action}</div>}

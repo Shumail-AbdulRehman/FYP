@@ -141,11 +141,6 @@ export const softDeleteStaff = async (req: Request, res: Response) => {
     throw new ApiError(400, "Staff is already deactivated");
   }
 
-  // await prisma.staff.update({
-  //   where: { id: staffId },
-  //   data: { isActive: false, refreshToken: null }
-  // });
-
   await prisma.$transaction([
     prisma.staff.update({
       where: { id: staffId },
@@ -360,6 +355,52 @@ export const getStaffDetails = async (req: Request, res: Response) => {
   const staffId = Number(req.params.id);
   if (isNaN(staffId)) throw new ApiError(400, "Invalid staff id");
 
+  const monthParam = req.query.month as string | undefined;
+  const dateFromParam = req.query.dateFrom as string | undefined;
+  const dateToParam = req.query.dateTo as string | undefined;
+
+  let dateFilter: { gte?: Date; lte?: Date } | undefined;
+  let periodLabel = "All time";
+
+  if (monthParam) {
+    const match = /^(\d{4})-(\d{2})$/.exec(monthParam);
+    if (!match) {
+      throw new ApiError(400, "Invalid month format. Use YYYY-MM");
+    }
+
+    const year = Number(match[1]);
+    const monthIndex = Number(match[2]) - 1;
+
+    if (monthIndex < 0 || monthIndex > 11) {
+      throw new ApiError(400, "Invalid month value");
+    }
+
+    const startDate = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0, 0));
+    const endDate = new Date(Date.UTC(year, monthIndex + 1, 0, 23, 59, 59, 999));
+    dateFilter = { gte: startDate, lte: endDate };
+    periodLabel = startDate.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+  } else if (dateFromParam || dateToParam) {
+    if (!dateFromParam || !dateToParam) {
+      throw new ApiError(400, "Both dateFrom and dateTo are required together");
+    }
+
+    const startDate = new Date(dateFromParam);
+    const endDate = new Date(dateToParam);
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      throw new ApiError(400, "Invalid dateFrom or dateTo format. Use YYYY-MM-DD");
+    }
+
+    if (startDate > endDate) {
+      throw new ApiError(400, "dateFrom must be before dateTo");
+    }
+
+    startDate.setUTCHours(0, 0, 0, 0);
+    endDate.setUTCHours(23, 59, 59, 999);
+    dateFilter = { gte: startDate, lte: endDate };
+    periodLabel = `${dateFromParam} to ${dateToParam}`;
+  }
+
   const staff = await prisma.staff.findUnique({
     where: { id: staffId },
     select: {
@@ -381,12 +422,16 @@ export const getStaffDetails = async (req: Request, res: Response) => {
         orderBy: { createdAt: "desc" },
       },
       taskInstances: {
-        where: { isActive: true },
+        where: {
+          isActive: true,
+          ...(dateFilter ? { date: dateFilter } : {}),
+        },
         orderBy: { date: "desc" },
         take: 50,
         include: { location: { select: { id: true, name: true } } },
       },
       attendances: {
+        where: dateFilter ? { date: dateFilter } : undefined,
         orderBy: { date: "desc" },
         take: 50,
         include: { location: { select: { id: true, name: true } } },
@@ -398,7 +443,6 @@ export const getStaffDetails = async (req: Request, res: Response) => {
     throw new ApiError(404, "Staff not found in your company");
   }
 
-  // Compute summary stats
   const taskStats = {
     totalTemplates: staff.taskTemplates.length,
     totalInstances: staff.taskInstances.length,
@@ -414,6 +458,7 @@ export const getStaffDetails = async (req: Request, res: Response) => {
     present: staff.attendances.filter((a) => a.status === "CHECKED_IN" || a.status === "CHECKED_OUT").length,
     absent: staff.attendances.filter((a) => a.status === "ABSENT").length,
     late: staff.attendances.filter((a) => a.status === "LATE" || a.isLateCheckIn).length,
+    missedCheckout: staff.attendances.filter((a) => a.status === "MISSED_CHECKOUT").length,
   };
 
   res.status(200).json(
@@ -421,6 +466,7 @@ export const getStaffDetails = async (req: Request, res: Response) => {
       ...staff,
       taskStats,
       attendanceStats,
+      periodLabel,
     }, "Staff details fetched successfully")
   );
 };

@@ -1,11 +1,23 @@
 import React, { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useGetLocationById } from "./queries";
 import type { LocationStatsFilter } from "./queries";
 import StatusBadge from "@/components/common/StatusBadge";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
-import { useDeleteTaskTemplate, useEditTaskTemplate } from "@/pages/Task/queries";
+import { useCreateTaskTemplate, useDeleteTaskTemplate, useEditTaskTemplate } from "@/pages/Task/queries";
 import { useAssignStaffToTemplate } from "@/pages/Assignment/queries";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   MapPin,
   Building2,
@@ -22,9 +34,9 @@ import {
   Trash2,
   Pencil,
   MoreVertical,
+  Plus,
 } from "lucide-react";
 
-/* ── helpers ── */
 const toDateStr = (d: Date) => d.toISOString().split("T")[0];
 const fmtCoord = (v: string) => parseFloat(v).toFixed(6);
 const fmtTime = (d: string | null) => {
@@ -32,7 +44,6 @@ const fmtTime = (d: string | null) => {
   return new Date(d).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 };
 
-/* ── filters ── */
 type FilterKey = "today" | "yesterday" | "7days" | "all";
 const FILTERS: { key: FilterKey; label: string; toFilter: () => LocationStatsFilter | undefined }[] = [
   { key: "today", label: "Today", toFilter: () => { const t = toDateStr(new Date()); return { type: "range", dateFrom: t, dateTo: t }; } },
@@ -41,7 +52,6 @@ const FILTERS: { key: FilterKey; label: string; toFilter: () => LocationStatsFil
   { key: "all", label: "All Time", toFilter: () => undefined },
 ];
 
-/* ── stat card (local) ── */
 function StatCard({ label, value, icon: Icon, color }: { label: string; value: string | number; icon: React.ElementType; color: string }) {
   const colors: Record<string, string> = {
     indigo: "bg-teal-100 text-teal-600",
@@ -64,7 +74,6 @@ function StatCard({ label, value, icon: Icon, color }: { label: string; value: s
   );
 }
 
-/* ── tabs ── */
 type Tab = "staff" | "templates" | "instances";
 const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
   { key: "staff", label: "Staff", icon: Users },
@@ -74,14 +83,44 @@ const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
 
 interface TaskStatEntry { status: string; _count: { status: number } }
 
-/* ── Templates Tab Component ── */
-function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: any[] }) {
+interface TemplateCreateForm {
+  title: string;
+  description: string;
+  staffId: string;
+  shiftStart: string;
+  shiftEnd: string;
+  recurringType: "DAILY" | "ONCE";
+  effectiveDate: string;
+}
+
+function TemplatesTab({
+  templates,
+  staffList,
+  locationId,
+}: {
+  templates: any[];
+  staffList: any[];
+  locationId: number;
+}) {
+  const queryClient = useQueryClient();
+  const createTemplate = useCreateTaskTemplate(false);
   const deleteTemplate = useDeleteTaskTemplate();
   const editTemplate = useEditTaskTemplate();
   const assignStaff = useAssignStaffToTemplate();
   const [openMenu, setOpenMenu] = useState<number | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<any | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<TemplateCreateForm>({
+    title: "",
+    description: "",
+    staffId: "",
+    shiftStart: "",
+    shiftEnd: "",
+    recurringType: "DAILY",
+    effectiveDate: toDateStr(new Date()),
+  });
   const [editForm, setEditForm] = useState({
     title: "",
     description: "",
@@ -91,6 +130,46 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
     recurringType: "" as string,
     effectiveDate: "",
   });
+  const todayDate = toDateStr(new Date());
+
+  const toTimeValue = (iso: string | null) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  };
+
+  const toDateValue = (iso: string | null) => {
+    if (!iso) return "";
+    return new Date(iso).toISOString().split("T")[0];
+  };
+
+  const resetCreateForm = () => {
+    setCreateForm({
+      title: "",
+      description: "",
+      staffId: "",
+      shiftStart: "",
+      shiftEnd: "",
+      recurringType: "DAILY",
+      effectiveDate: toDateStr(new Date()),
+    });
+    setCreateError(null);
+  };
+
+  const buildDateTimeIso = (dateValue: string, timeValue: string) => {
+    const localDate = new Date(`${dateValue}T${timeValue}:00`);
+    return localDate.toISOString();
+  };
+
+  const buildEffectiveDate = (dateValue: string) => {
+    return new Date(`${dateValue}T12:00:00`);
+  };
+
+  const extractError = (err: any) =>
+    err?.response?.data?.errors?.map((e: any) => e.message).join(", ") ||
+    err?.response?.data?.message ||
+    err?.message ||
+    "An unknown error occurred";
 
   const handleDelete = (t: any) => {
     setOpenMenu(null);
@@ -99,17 +178,55 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
     }
   };
 
-  // Format ISO datetime to "HH:mm" for input[type=time]
-  const toTimeValue = (iso: string | null) => {
-    if (!iso) return "";
-    const d = new Date(iso);
-    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  };
+  const handleCreateTemplate = async () => {
+    setCreateError(null);
 
-  // Format ISO date to "YYYY-MM-DD" for input[type=date]
-  const toDateValue = (iso: string | null) => {
-    if (!iso) return "";
-    return new Date(iso).toISOString().split("T")[0];
+    if (!createForm.title.trim() || !createForm.shiftStart || !createForm.shiftEnd || !createForm.effectiveDate) {
+      setCreateError("Title, shift start, shift end, and effective date are required.");
+      return;
+    }
+
+    if (!createForm.staffId) {
+      setCreateError("Staff assignment is required for every task template.");
+      return;
+    }
+
+    let createdId: number | null = null;
+    try {
+      const created = await createTemplate.mutateAsync({
+        title: createForm.title.trim(),
+        description: createForm.description.trim() || undefined,
+        locationId,
+        shiftStart: new Date(buildDateTimeIso(createForm.effectiveDate, createForm.shiftStart)),
+        shiftEnd: new Date(buildDateTimeIso(createForm.effectiveDate, createForm.shiftEnd)),
+        recurringType: createForm.recurringType,
+        effectiveDate: buildEffectiveDate(createForm.effectiveDate),
+      });
+
+      createdId = created?.data?.id ?? null;
+
+      if (!createdId) {
+        throw new Error("Task template was created but no template id was returned.");
+      }
+
+      await assignStaff.mutateAsync({
+        templateId: createdId,
+        staffId: Number(createForm.staffId),
+      });
+
+      await queryClient.invalidateQueries({ queryKey: ["location"] });
+      resetCreateForm();
+      setCreateDialogOpen(false);
+    } catch (err: unknown) {
+      if (createdId) {
+        try {
+          await deleteTemplate.mutateAsync(createdId);
+        } catch {
+        }
+      }
+      await queryClient.invalidateQueries({ queryKey: ["location"] });
+      setCreateError(extractError(err));
+    }
   };
 
   const handleEditOpen = (t: any) => {
@@ -127,17 +244,10 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
     });
   };
 
-  const extractError = (err: any) =>
-    err?.response?.data?.message ||
-    err?.response?.data?.errors?.map((e: any) => e.message).join(", ") ||
-    err?.message ||
-    "An unknown error occurred";
-
   const handleEditSave = async () => {
     if (!editingTemplate) return;
     setEditError(null);
 
-    // 1) Build template-edit payload (everything except staffId)
     const payload: Record<string, any> = {};
     if (editForm.title !== editingTemplate.title) payload.title = editForm.title;
     if (editForm.description !== (editingTemplate.description || "")) payload.description = editForm.description || undefined;
@@ -160,12 +270,10 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
       payload.effectiveDate = new Date(editForm.effectiveDate).toISOString();
     }
 
-    // 2) Check if staff assignment changed
     const staffChanged = editForm.staffId !== String(editingTemplate.staffId ?? "");
     const hasFieldChanges = Object.keys(payload).length > 0;
 
     try {
-      // Save template field changes first (if any)
       if (hasFieldChanges) {
         await new Promise<void>((resolve, reject) => {
           editTemplate.mutate(
@@ -175,7 +283,6 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
         });
       }
 
-      // Then assign staff via the assignment endpoint (if changed)
       if (staffChanged && editForm.staffId) {
         await new Promise<void>((resolve, reject) => {
           assignStaff.mutate(
@@ -191,26 +298,153 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
     }
   };
 
-  const inputCls = "w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500";
-
-  if (templates.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 text-center">
-        <ClipboardList className="h-12 w-12 text-gray-400 mb-4" />
-        <p className="text-sm text-gray-500">No task templates for this location.</p>
-      </div>
-    );
-  }
+  const inputCls = "w-full rounded-2xl border border-border/80 bg-background/90 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/60 focus:outline-none focus:ring-4 focus:ring-primary/10";
+  const formLabelCls = "mb-1.5 block text-sm font-medium text-foreground";
 
   return (
     <>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-foreground">Task templates</p>
+          <p className="text-sm text-muted-foreground">
+            Every template must be assigned to a staff member from the same location.
+          </p>
+        </div>
+        <Dialog
+          open={createDialogOpen}
+          onOpenChange={(open) => {
+            setCreateDialogOpen(open);
+            if (!open) resetCreateForm();
+          }}
+        >
+          <DialogTrigger asChild>
+            <Button className="rounded-2xl">
+              <Plus className="size-4" />
+              Add template
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-h-[90vh] overflow-y-auto border-border/70 bg-card text-card-foreground sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Create task template</DialogTitle>
+              <DialogDescription>
+                This follows the backend flow: create the task template at the location, then immediately assign staff. If assignment fails, the new template is rolled back.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className={formLabelCls}>Title</label>
+                <Input
+                  value={createForm.title}
+                  onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
+                  placeholder="Open and sanitize lobby"
+                />
+              </div>
+              <div>
+                <label className={formLabelCls}>Description</label>
+                <Textarea
+                  value={createForm.description}
+                  onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                  placeholder="Optional notes for the task template"
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className={formLabelCls}>Recurring type</label>
+                  <select
+                    value={createForm.recurringType}
+                    onChange={(e) =>
+                      setCreateForm({
+                        ...createForm,
+                        recurringType: e.target.value as "DAILY" | "ONCE",
+                      })
+                    }
+                    className={inputCls}
+                  >
+                    <option value="DAILY">Daily</option>
+                    <option value="ONCE">Once</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={formLabelCls}>Effective date</label>
+                <Input
+                  type="date"
+                  value={createForm.effectiveDate}
+                  onChange={(e) => setCreateForm({ ...createForm, effectiveDate: e.target.value })}
+                  min={todayDate}
+                />
+              </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className={formLabelCls}>Shift start</label>
+                  <Input
+                    type="time"
+                    value={createForm.shiftStart}
+                    onChange={(e) => setCreateForm({ ...createForm, shiftStart: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className={formLabelCls}>Shift end</label>
+                  <Input
+                    type="time"
+                    value={createForm.shiftEnd}
+                    onChange={(e) => setCreateForm({ ...createForm, shiftEnd: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className={formLabelCls}>Assign staff</label>
+                <select
+                  value={createForm.staffId}
+                  onChange={(e) => setCreateForm({ ...createForm, staffId: e.target.value })}
+                  className={inputCls}
+                >
+                  <option value="">Select staff</option>
+                  {staffList.map((s: any) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Backend rule: the selected staff member must already belong to this location and the task time must fit inside their shift.
+                </p>
+              </div>
+              {createError ? (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                  {createError}
+                </div>
+              ) : null}
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" className="flex-1 rounded-2xl" onClick={() => setCreateDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 rounded-2xl"
+                  onClick={handleCreateTemplate}
+                  disabled={createTemplate.isPending || assignStaff.isPending}
+                >
+                  {createTemplate.isPending || assignStaff.isPending ? "Saving..." : "Create template"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {templates.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 text-center">
+          <ClipboardList className="mb-4 h-12 w-12 text-gray-400" />
+          <p className="text-sm text-gray-500">No task templates for this location.</p>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {templates.map((t: any) => (
           <div
             key={t.id}
             className="relative rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
           >
-            {/* Header: title + 3-dot menu */}
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <h3 className="text-sm font-semibold text-gray-900 truncate">{t.title}</h3>
@@ -219,7 +453,6 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
                 )}
               </div>
 
-              {/* 3-dot menu */}
               <div className="relative shrink-0">
                 <button
                   onClick={() => setOpenMenu(openMenu === t.id ? null : t.id)}
@@ -252,13 +485,11 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
               </div>
             </div>
 
-            {/* Badges row */}
             <div className="mt-3 flex flex-wrap gap-2">
               <StatusBadge status={t.recurringType ?? "ONCE"} />
               <StatusBadge status={t.isActive ? "ACTIVE" : "INACTIVE"} />
             </div>
 
-            {/* Assigned Staff */}
             <div className="mt-3 border-t border-gray-100 pt-3">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Assigned To</p>
               {t.staff ? (
@@ -273,7 +504,6 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
               )}
             </div>
 
-            {/* Shift & Date */}
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
               <div>
                 <p className="text-gray-400">Shift</p>
@@ -290,13 +520,11 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
         ))}
       </div>
 
-      {/* Full Edit Dialog */}
       {editingTemplate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setEditingTemplate(null)}>
           <div className="mx-4 w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-bold text-gray-900 mb-5">Edit Task Template</h2>
             <div className="space-y-4">
-              {/* Title */}
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1.5">Title</label>
                 <input
@@ -307,7 +535,6 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
                 />
               </div>
 
-              {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1.5">Description</label>
                 <textarea
@@ -318,9 +545,8 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
                 />
               </div>
 
-              {/* Assigned Staff */}
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1.5">Assigned Staff</label>
+                <label className={formLabelCls}>Assigned Staff</label>
                 <select
                   value={editForm.staffId}
                   onChange={(e) => setEditForm({ ...editForm, staffId: e.target.value })}
@@ -335,31 +561,27 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
                 </select>
               </div>
 
-              {/* Shift Start / End */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1.5">Shift Start</label>
-                  <input
+                  <label className={formLabelCls}>Shift Start</label>
+                  <Input
                     type="time"
                     value={editForm.shiftStart}
                     onChange={(e) => setEditForm({ ...editForm, shiftStart: e.target.value })}
-                    className={inputCls}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1.5">Shift End</label>
-                  <input
+                  <label className={formLabelCls}>Shift End</label>
+                  <Input
                     type="time"
                     value={editForm.shiftEnd}
                     onChange={(e) => setEditForm({ ...editForm, shiftEnd: e.target.value })}
-                    className={inputCls}
                   />
                 </div>
               </div>
 
-              {/* Recurring Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1.5">Recurring Type</label>
+                <label className={formLabelCls}>Recurring Type</label>
                 <select
                   value={editForm.recurringType}
                   onChange={(e) => setEditForm({ ...editForm, recurringType: e.target.value })}
@@ -371,25 +593,22 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
                 </select>
               </div>
 
-              {/* Effective Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1.5">Effective Date</label>
-                <input
+                <label className={formLabelCls}>Effective Date</label>
+                <Input
                   type="date"
                   value={editForm.effectiveDate}
                   onChange={(e) => setEditForm({ ...editForm, effectiveDate: e.target.value })}
-                  className={inputCls}
+                  min={todayDate}
                 />
               </div>
 
-              {/* Error Message */}
               {editError && (
                 <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                   {editError}
                 </div>
               )}
 
-              {/* Action buttons */}
               <div className="flex gap-3 pt-3">
                 <button
                   onClick={() => setEditingTemplate(null)}
@@ -402,7 +621,7 @@ function TemplatesTab({ templates, staffList }: { templates: any[]; staffList: a
                   disabled={editTemplate.isPending || !editForm.title.trim()}
                   className="flex-1 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-gray-900 shadow-sm transition-colors hover:bg-teal-700 disabled:opacity-60"
                 >
-                  {editTemplate.isPending ? "Saving…" : "Save Changes"}
+                  {editTemplate.isPending ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </div>
@@ -452,7 +671,6 @@ const LocationDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm">
         <Link to="/locations" className="text-gray-500 hover:text-gray-900 transition-colors">
           Locations
@@ -461,7 +679,6 @@ const LocationDetailPage: React.FC = () => {
         <span className="text-gray-900 font-medium">{locationInfo.name}</span>
       </div>
 
-      {/* Location Header */}
       <div className="rounded-xl border border-gray-200 bg-white p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
@@ -479,7 +696,6 @@ const LocationDetailPage: React.FC = () => {
           <StatusBadge status={locationInfo.isActive ? "ACTIVE" : "INACTIVE"} />
         </div>
 
-        {/* Geo pills */}
         <div className="mt-4 flex flex-wrap gap-2 border-t border-gray-200 pt-4">
           <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-xs text-gray-500">
             <Navigation className="h-3 w-3" /> Lat: {fmtCoord(locationInfo.latitude)}
@@ -493,7 +709,6 @@ const LocationDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Date filter + stats */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white p-1">
           <Calendar className="ml-2 h-4 w-4 text-gray-400 shrink-0" />
@@ -514,7 +729,6 @@ const LocationDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Stat Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Active Staff" value={staffCount} icon={Users} color="indigo" />
         <StatCard label="Task Templates" value={templateCount} icon={ClipboardList} color="purple" />
@@ -522,7 +736,6 @@ const LocationDetailPage: React.FC = () => {
         <StatCard label="Completed" value={completedCount} icon={CalendarCheck} color="emerald" />
       </div>
 
-      {/* Task Status Breakdown */}
       {taskStats.length > 0 && (
         <div className="flex flex-wrap gap-3">
           {taskStats.map((entry) => (
@@ -534,7 +747,6 @@ const LocationDetailPage: React.FC = () => {
         </div>
       )}
 
-      {/* Tabs */}
       <div className="border-b border-gray-200">
         <div className="flex gap-0">
           {TABS.map(({ key, label, icon: Icon }) => (
@@ -554,7 +766,6 @@ const LocationDetailPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tab Content */}
       {activeTab === "staff" && (
         <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
           <table className="w-full text-sm">
@@ -599,7 +810,13 @@ const LocationDetailPage: React.FC = () => {
         </div>
       )}
 
-      {activeTab === "templates" && <TemplatesTab templates={locationInfo.taskTemplates ?? []} staffList={locationInfo.staff ?? []} />}
+      {activeTab === "templates" && (
+        <TemplatesTab
+          templates={locationInfo.taskTemplates ?? []}
+          staffList={locationInfo.staff ?? []}
+          locationId={locationInfo.id}
+        />
+      )}
 
       {activeTab === "instances" && (
         <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">

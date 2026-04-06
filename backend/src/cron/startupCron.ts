@@ -1,13 +1,11 @@
 import { prisma } from "../prisma/prisma.js";
+import { resolveTaskInstanceWindow } from "./taskInstanceWindow.js";
+import { getKarachiDayRange, resolveAttendanceWindow } from "../utils/karachiTime.js";
 
 
 export async function runStartupCron(): Promise<void> {
     try {
-        const today = new Date();
-        today.setUTCHours(0, 0, 0, 0);
-
-        const tomorrow = new Date(today);
-        tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+        const { start: today, end: tomorrow } = getKarachiDayRange();
 
        
 
@@ -26,51 +24,31 @@ export async function runStartupCron(): Promise<void> {
             },
         });
 
-        let attendanceCreated = 0;
+        const attendanceToCreate = [];
 
         for (const staff of eligibleStaff) {
-            const existing = await prisma.attendance.findFirst({
-                where: {
-                    staffId: staff.id,
-                    date: { gte: today, lt: tomorrow },
-                },
+            const { date, expectedStart, expectedEnd } = resolveAttendanceWindow({
+                baseDate: today,
+                shiftStart: staff.shiftStart!,
+                shiftEnd: staff.shiftEnd!,
             });
 
-            if (existing) continue;
-
-            const expectedStart = new Date(today);
-            expectedStart.setUTCHours(
-                staff.shiftStart!.getUTCHours(),
-                staff.shiftStart!.getUTCMinutes(),
-                staff.shiftStart!.getUTCSeconds(),
-                0
-            );
-
-            const expectedEnd = new Date(today);
-            expectedEnd.setUTCHours(
-                staff.shiftEnd!.getUTCHours(),
-                staff.shiftEnd!.getUTCMinutes(),
-                staff.shiftEnd!.getUTCSeconds(),
-                0
-            );
-
-            if (expectedEnd <= expectedStart) {
-                expectedEnd.setUTCDate(expectedEnd.getUTCDate() + 1);
-            }
-
-            await prisma.attendance.create({
-                data: {
+            attendanceToCreate.push({
                     staffId: staff.id,
                     locationId: staff.locationId!,
-                    date: today,
+                    date,
                     expectedStart,
                     expectedEnd,
-                    status: "ABSENT",
-                },
+                    status: "ABSENT" as const,
             });
-
-            attendanceCreated++;
         }
+
+        const { count: attendanceCreated } = attendanceToCreate.length
+            ? await prisma.attendance.createMany({
+                data: attendanceToCreate,
+                skipDuplicates: true,
+            })
+            : { count: 0 };
 
        
 
@@ -84,6 +62,14 @@ export async function runStartupCron(): Promise<void> {
                     { recurringEndDate: { gte: today } },
                 ],
             },
+            include: {
+                staff: {
+                    select: {
+                        shiftStart: true,
+                        shiftEnd: true,
+                    },
+                },
+            },
         });
 
         const onceTemplates = await prisma.taskTemplate.findMany({
@@ -92,54 +78,44 @@ export async function runStartupCron(): Promise<void> {
                 recurringType: "ONCE",
                 effectiveDate: { gte: today, lt: tomorrow },
             },
+            include: {
+                staff: {
+                    select: {
+                        shiftStart: true,
+                        shiftEnd: true,
+                    },
+                },
+            },
         });
 
-        let tasksCreated = 0;
+        const instancesToCreate = [];
 
         for (const template of [...dailyTemplates, ...onceTemplates]) {
-            const existing = await prisma.taskInstance.findFirst({
-                where: {
-                    templateId: template.id,
-                    date: { gte: today, lt: tomorrow },
-                },
+            const { date, shiftStart, shiftEnd } = resolveTaskInstanceWindow({
+                baseDate: today,
+                taskShiftStart: template.shiftStart,
+                taskShiftEnd: template.shiftEnd,
+                staffShiftStart: template.staff?.shiftStart,
+                staffShiftEnd: template.staff?.shiftEnd,
             });
 
-            if (existing) continue;
-
-            const shiftStart = new Date(today);
-            shiftStart.setUTCHours(
-                template.shiftStart.getUTCHours(),
-                template.shiftStart.getUTCMinutes(),
-                template.shiftStart.getUTCSeconds(),
-                0
-            );
-
-            const shiftEnd = new Date(today);
-            shiftEnd.setUTCHours(
-                template.shiftEnd.getUTCHours(),
-                template.shiftEnd.getUTCMinutes(),
-                template.shiftEnd.getUTCSeconds(),
-                0
-            );
-
-            if (shiftEnd <= shiftStart) {
-                shiftEnd.setUTCDate(shiftEnd.getUTCDate() + 1);
-            }
-
-            await prisma.taskInstance.create({
-                data: {
+            instancesToCreate.push({
                     templateId: template.id,
                     title: template.title,
-                    date: today,
+                    date,
                     shiftStart,
                     shiftEnd,
                     staffId: template.staffId,
                     locationId: template.locationId,
-                },
             });
-
-            tasksCreated++;
         }
+
+        const { count: tasksCreated } = instancesToCreate.length
+            ? await prisma.taskInstance.createMany({
+                data: instancesToCreate,
+                skipDuplicates: true,
+            })
+            : { count: 0 };
 
         if (attendanceCreated > 0 || tasksCreated > 0) {
             console.log(

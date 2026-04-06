@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
+import { getKarachiDayRange } from "../utils/karachiTime.js";
 
 
 export const getTodaysTasksForStaff = async (req: Request, res: Response) => {
@@ -17,11 +18,7 @@ export const getTodaysTasksForStaff = async (req: Request, res: Response) => {
     throw new ApiError(404, "Staff not found in your company");
   }
 
- const today = new Date();
-today.setUTCHours(0, 0, 0, 0);
-
-const tomorrow = new Date(today);
-tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+const { start: today, end: tomorrow } = getKarachiDayRange();
 
 const tasks = await prisma.taskInstance.findMany({
   where: {
@@ -210,4 +207,3 @@ export const getTasknstancesOfLocation = async (req: Request, res: Response) => 
 
 
   
-

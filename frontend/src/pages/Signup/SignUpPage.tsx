@@ -3,6 +3,9 @@ import { useCreateManager } from "./queries.js";
 import { useState } from "react";
 import type { SignUpForm } from "./types.js";
 import { Link } from "react-router-dom";
+import AuthShell from "@/components/common/AuthShell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const SignUp = () => {
   const {
@@ -25,118 +28,100 @@ const SignUp = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950">
-      <div className="w-full max-w-md space-y-6 rounded-2xl border border-slate-700/60 bg-slate-900 p-8 shadow-2xl">
-        {/* Brand */}
-        <div className="text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-600 text-2xl font-bold text-white">
-            CO
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">
-            Create Account
-          </h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Set up your CleanOps workspace
-          </p>
-        </div>
-
+    <AuthShell
+      title="Create your workspace"
+      subtitle="Set up your manager account and start organizing teams, locations, and recurring operational tasks."
+      footer={
+        <p>
+          Already have an account?{" "}
+          <Link to="/login" className="font-medium text-primary hover:text-primary/80">
+            Log in
+          </Link>
+        </p>
+      }
+    >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
               Full Name
             </label>
-            <input
+            <Input
               {...register("name", { required: "Name is required" })}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               placeholder="Alice Johnson"
             />
             {errors.name && (
-              <p className="mt-1 text-xs text-red-400">
+              <p className="mt-1 text-xs text-red-500">
                 {errors.name.message}
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
               Company Name
             </label>
-            <input
+            <Input
               {...register("companyName", {
                 required: "Company Name is required",
               })}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               placeholder="Sparkle Clean Co."
             />
             {errors.companyName && (
-              <p className="mt-1 text-xs text-red-400">
+              <p className="mt-1 text-xs text-red-500">
                 {errors.companyName.message}
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
               Email
             </label>
-            <input
+            <Input
               type="email"
               {...register("email", { required: "Email is required" })}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               placeholder="alice@company.com"
             />
             {errors.email && (
-              <p className="mt-1 text-xs text-red-400">
+              <p className="mt-1 text-xs text-red-500">
                 {errors.email.message}
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
               Password
             </label>
-            <input
+            <Input
               type="password"
               {...register("password", {
                 required: "Password is required",
               })}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               placeholder="••••••••"
             />
             {errors.password && (
-              <p className="mt-1 text-xs text-red-400">
+              <p className="mt-1 text-xs text-red-500">
                 {errors.password.message}
               </p>
             )}
           </div>
 
           {err && (
-            <div className="rounded-lg bg-red-500/10 px-4 py-2.5 text-sm text-red-400">
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               {err}
             </div>
           )}
 
-          <button
+          <Button
             type="submit"
             disabled={createManager.isPending}
-            className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-medium text-white shadow-sm shadow-indigo-600/30 transition-colors hover:bg-indigo-500 disabled:opacity-60"
+            className="h-11 w-full rounded-2xl"
           >
-            {createManager.isPending ? "Creating…" : "Create Account"}
-          </button>
+            {createManager.isPending ? "Creating..." : "Create account"}
+          </Button>
         </form>
-
-        <p className="text-center text-sm text-slate-400">
-          Already have an account?{" "}
-          <Link
-            to="/login"
-            className="font-medium text-indigo-400 hover:text-indigo-300"
-          >
-            Log In
-          </Link>
-        </p>
-      </div>
-    </div>
+    </AuthShell>
   );
 };
 

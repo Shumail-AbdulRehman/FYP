@@ -31,8 +31,20 @@ export const getStaffById = async (id: number) => {
   return res.data;
 };
 
-export const getStaffDetails = async (id: number) => {
-  const res = await client.get(`/staff/details/${id}`);
+export interface StaffDetailsFilters {
+  month?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export const getStaffDetails = async (id: number, filters?: StaffDetailsFilters) => {
+  const params: Record<string, string> = {};
+
+  if (filters?.month) params.month = filters.month;
+  if (filters?.dateFrom) params.dateFrom = filters.dateFrom;
+  if (filters?.dateTo) params.dateTo = filters.dateTo;
+
+  const res = await client.get(`/staff/details/${id}`, { params });
   return res.data;
 };
 

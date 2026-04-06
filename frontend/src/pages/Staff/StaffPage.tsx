@@ -17,6 +17,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Users, Plus, Search, Pencil, MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import StatCard from "@/components/common/StatCard";
+import FilterBar from "@/components/common/FilterBar";
 
 interface StaffMember {
   id: number;
@@ -47,7 +51,7 @@ const toTimeValue = (iso: string | null) => {
 };
 
 const inputCls =
-  "w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500";
+  "flex h-11 w-full rounded-2xl border border-border/80 bg-background/90 px-4 py-2 text-sm shadow-xs outline-none focus:border-primary/60 focus:ring-4 focus:ring-primary/10";
 
 export default function StaffPage() {
   const { data, isLoading } = useGetStaff();
@@ -62,7 +66,6 @@ export default function StaffPage() {
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Edit staff state
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
@@ -81,6 +84,8 @@ export default function StaffPage() {
     const matchesLocation = locationFilter === "all" ? true : locationFilter === "unassigned" ? s.locationId === null : s.locationId === Number(locationFilter);
     return matchesSearch && matchesLocation;
   });
+  const assignedStaffCount = staff.filter((s) => s.locationId !== null).length;
+  const activeStaffCount = staff.filter((s) => s.isActive).length;
 
   const locMap = new Map(locations.map((l: any) => [l.id, l.name]));
 
@@ -176,84 +181,88 @@ export default function StaffPage() {
       <PageHeader title="Staff" subtitle={`${staff.length} team members`} action={
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <button className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-teal-700">
+            <Button className="rounded-2xl px-4">
               <Plus className="h-4 w-4" /> Add Staff
-            </button>
+            </Button>
           </DialogTrigger>
-          <DialogContent className="bg-white border-gray-200 text-gray-800">
+          <DialogContent className="border-border/70 bg-card text-card-foreground sm:max-w-xl">
             <DialogHeader><DialogTitle>Add Staff Member</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit(onCreateSubmit)} className="space-y-4 pt-2">
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1.5">Full Name</label>
-                <input {...register("name", { required: "Name is required" })} className={inputCls} placeholder="John Smith" />
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Full Name</label>
+                <Input {...register("name", { required: "Name is required" })} placeholder="John Smith" />
                 {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1.5">Email</label>
-                <input type="email" {...register("email", { required: "Email is required" })} className={inputCls} placeholder="john@company.com" />
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Email</label>
+                <Input type="email" {...register("email", { required: "Email is required" })} placeholder="john@company.com" />
                 {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1.5">Password</label>
-                <input type="password" {...register("password", { required: "Password is required" })} className={inputCls} placeholder="••••••••" />
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Password</label>
+                <Input type="password" {...register("password", { required: "Password is required" })} placeholder="••••••••" />
                 {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1.5">Location (optional)</label>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">Location (optional)</label>
                 <select {...register("locationId")} className={inputCls}>
                   <option value="">No location</option>
                   {locations.map((l: any) => <option key={l.id} value={l.id}>{l.name}</option>)}
                 </select>
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => { reset(); setDialogOpen(false); }} className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50">Cancel</button>
-                <button type="submit" disabled={createStaff.isPending} className="flex-1 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-teal-700 disabled:opacity-60">{createStaff.isPending ? "Creating…" : "Create Staff"}</button>
+                <Button type="button" variant="outline" className="flex-1 rounded-2xl" onClick={() => { reset(); setDialogOpen(false); }}>Cancel</Button>
+                <Button type="submit" disabled={createStaff.isPending} className="flex-1 rounded-2xl">{createStaff.isPending ? "Creating..." : "Create staff"}</Button>
               </div>
             </form>
           </DialogContent>
         </Dialog>
       } />
 
-      {/* Search + Location Filter */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative max-w-sm flex-1">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <StatCard label="Team members" value={staff.length} icon={Users} />
+        <StatCard label="Assigned to location" value={assignedStaffCount} icon={MapPin} tone="sky" />
+        <StatCard label="Active staff" value={activeStaffCount} icon={Plus} tone="emerald" />
+      </div>
+
+      <FilterBar>
+        <div className="relative max-w-sm sm:max-w-none">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search staff by name or email…" className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500" />
+          <Input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search staff by name or email..." className="pl-10" />
         </div>
         <div className="relative">
           <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} className="appearance-none rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-8 text-sm text-gray-800 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500">
+          <select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} className={`${inputCls} appearance-none pl-10 pr-8`}>
             <option value="all">All Locations</option>
             <option value="unassigned">Unassigned</option>
             {locations.map((l: any) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
         </div>
-      </div>
+      </FilterBar>
 
       <DataTable columns={columns} data={filtered} rowKey={(s) => s.id} emptyIcon={<Users className="h-12 w-12" />} emptyMessage="No staff members found." onRowClick={(s) => navigate(`/staff/${s.id}`)} />
 
-      {/* Edit Staff Dialog */}
       {editingStaff && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setEditingStaff(null)}>
-          <div className="mx-4 w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-gray-900 mb-5">Edit Staff</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 px-4" onClick={() => setEditingStaff(null)}>
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[1.75rem] border border-border/70 bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="mb-5 text-lg font-bold text-foreground">Edit Staff</h2>
             <div className="space-y-4">
-              <div><label className="block text-sm font-medium text-gray-600 mb-1.5">Name</label><input type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className={inputCls} /></div>
-              <div><label className="block text-sm font-medium text-gray-600 mb-1.5">Email</label><input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className={inputCls} /></div>
-              <div><label className="block text-sm font-medium text-gray-600 mb-1.5">Location</label>
+              <div><label className="mb-1.5 block text-sm font-medium text-foreground">Name</label><Input type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} /></div>
+              <div><label className="mb-1.5 block text-sm font-medium text-foreground">Email</label><Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} /></div>
+              <div><label className="mb-1.5 block text-sm font-medium text-foreground">Location</label>
                 <select value={editForm.locationId} onChange={(e) => setEditForm({ ...editForm, locationId: e.target.value })} className={inputCls}>
                   <option value="">Unassigned</option>
                   {locations.map((l: any) => <option key={l.id} value={l.id}>{l.name}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-gray-600 mb-1.5">Shift Start</label><input type="time" value={editForm.shiftStart} onChange={(e) => setEditForm({ ...editForm, shiftStart: e.target.value })} className={inputCls} /></div>
-                <div><label className="block text-sm font-medium text-gray-600 mb-1.5">Shift End</label><input type="time" value={editForm.shiftEnd} onChange={(e) => setEditForm({ ...editForm, shiftEnd: e.target.value })} className={inputCls} /></div>
+                <div><label className="mb-1.5 block text-sm font-medium text-foreground">Shift Start</label><Input type="time" value={editForm.shiftStart} onChange={(e) => setEditForm({ ...editForm, shiftStart: e.target.value })} /></div>
+                <div><label className="mb-1.5 block text-sm font-medium text-foreground">Shift End</label><Input type="time" value={editForm.shiftEnd} onChange={(e) => setEditForm({ ...editForm, shiftEnd: e.target.value })} /></div>
               </div>
-              {editError && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{editError}</div>}
+              {editError && <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{editError}</div>}
               <div className="flex gap-3 pt-3">
-                <button onClick={() => setEditingStaff(null)} className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50">Cancel</button>
-                <button onClick={handleEditSave} disabled={editStaffMutation.isPending || assignLocation.isPending || !editForm.name.trim() || !editForm.email.trim()} className="flex-1 rounded-lg bg-teal-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-teal-700 disabled:opacity-60">{editStaffMutation.isPending || assignLocation.isPending ? "Saving…" : "Save Changes"}</button>
+                <Button onClick={() => setEditingStaff(null)} variant="outline" className="flex-1 rounded-2xl">Cancel</Button>
+                <Button onClick={handleEditSave} disabled={editStaffMutation.isPending || assignLocation.isPending || !editForm.name.trim() || !editForm.email.trim()} className="flex-1 rounded-2xl">{editStaffMutation.isPending || assignLocation.isPending ? "Saving..." : "Save changes"}</Button>
               </div>
             </div>
           </div>

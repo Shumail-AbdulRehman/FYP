@@ -5,8 +5,10 @@ import dotenv from "dotenv";
 import { Response, Request, NextFunction } from "express";
 import { ApiError } from "./utils/ApiError.js";
 import "./cron/dailyTaskScheduler.js";
+import "./cron/onceTaskScheduler.js";
 import "./cron/taskStatusCron.js";
 import "./cron/attendanceCron.js";
+import "./cron/attendanceStatusCron.js";
 import { runStartupCron } from "./cron/startupCron.js";
 
 

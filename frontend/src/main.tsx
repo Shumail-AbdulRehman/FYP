@@ -1,4 +1,3 @@
-import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App, { GuestRoute, ProtectedRoute } from './App.tsx';
@@ -16,6 +15,7 @@ import DashboardPage from './pages/Dashboard/DashboardPage.tsx';
 import StaffPage from './pages/Staff/StaffPage.tsx';
 import StaffDetailPage from './pages/Staff/StaffDetailPage.tsx';
 import AttendancePage from './pages/Attendance/AttendancePage.tsx';
+import TodayStatusPage from './pages/Manager/TodayStatusPage.tsx';
 
 const queryClient = new QueryClient();
 
@@ -48,6 +48,7 @@ const router = createBrowserRouter([
         ),
         children: [
           { index: true, element: <DashboardPage /> },
+          { path: 'today-status', element: <TodayStatusPage /> },
           { path: 'locations', element: <LocationsPage /> },
           { path: 'locations/:id', element: <LocationDetailPage /> },
           { path: 'staff', element: <StaffPage /> },

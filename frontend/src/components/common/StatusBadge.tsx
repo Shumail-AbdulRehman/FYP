@@ -1,39 +1,42 @@
+import { Badge } from "@/components/ui/badge";
+
 const COLORS: Record<string, string> = {
-  // Task statuses
-  PENDING:              "bg-gray-100 text-gray-600",
-  IN_PROGRESS:          "bg-amber-50 text-amber-700",
-  COMPLETED:            "bg-emerald-50 text-emerald-700",
-  MISSED:               "bg-red-50 text-red-700",
-  NOT_COMPLETED_INTIME: "bg-orange-50 text-orange-700",
-  CANCELLED:            "bg-gray-100 text-gray-500",
+  PENDING:              "border-slate-200 bg-slate-100 text-slate-700",
+  IN_PROGRESS:          "border-amber-200 bg-amber-100 text-amber-700",
+  COMPLETED:            "border-emerald-200 bg-emerald-100 text-emerald-700",
+  MISSED:               "border-red-200 bg-red-100 text-red-700",
+  NOT_COMPLETED_INTIME: "border-orange-200 bg-orange-100 text-orange-700",
+  CANCELLED:            "border-slate-200 bg-slate-100 text-slate-600",
 
-  // Attendance statuses
-  CHECKED_OUT:          "bg-emerald-50 text-emerald-700",
-  CHECKED_IN:           "bg-blue-50 text-blue-700",
-  LATE:                 "bg-amber-50 text-amber-700",
-  ABSENT:               "bg-red-50 text-red-700",
+  CHECKED_OUT:          "border-emerald-200 bg-emerald-100 text-emerald-700",
+  CHECKED_IN:           "border-sky-200 bg-sky-100 text-sky-700",
+  LATE:                 "border-amber-200 bg-amber-100 text-amber-700",
+  MISSED_CHECKOUT:      "border-rose-200 bg-rose-100 text-rose-700",
+  ABSENT:               "border-red-200 bg-red-100 text-red-700",
+  SHIFT_NOT_STARTED:    "border-slate-200 bg-slate-100 text-slate-700",
 
-  // Generic
-  ACTIVE:               "bg-emerald-50 text-emerald-700",
-  INACTIVE:             "bg-gray-100 text-gray-500",
-  DAILY:                "bg-teal-50 text-teal-700",
-  ONCE:                 "bg-gray-100 text-gray-600",
+  ACTIVE:               "border-emerald-200 bg-emerald-100 text-emerald-700",
+  INACTIVE:             "border-slate-200 bg-slate-100 text-slate-600",
+  DAILY:                "border-primary/20 bg-primary/10 text-primary",
+  ONCE:                 "border-slate-200 bg-slate-100 text-slate-700",
 };
 
 interface StatusBadgeProps {
-  status: string;
+  status?: string | null;
   className?: string;
 }
 
 export default function StatusBadge({ status, className = "" }: StatusBadgeProps) {
-  const color = COLORS[status] ?? "bg-gray-100 text-gray-600";
-  const label = status.replace(/_/g, " ");
+  const safeStatus = status ?? "UNKNOWN";
+  const color = COLORS[safeStatus] ?? "bg-gray-100 text-gray-600";
+  const label = safeStatus.replace(/_/g, " ");
 
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${color} ${className}`}
+    <Badge
+      variant="outline"
+      className={`whitespace-nowrap border ${color} ${className}`}
     >
       {label}
-    </span>
+    </Badge>
   );
 }

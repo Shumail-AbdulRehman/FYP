@@ -6,6 +6,7 @@ import {
   deactivateStaff,
   assignShift,
   editStaff,
+  type StaffDetailsFilters,
   type CreateStaffInput,
   type AssignShiftInput,
   type EditStaffInput,
@@ -18,10 +19,10 @@ export const useGetStaff = () => {
   });
 };
 
-export const useGetStaffDetails = (id: number) => {
+export const useGetStaffDetails = (id: number, filters?: StaffDetailsFilters) => {
   return useQuery({
-    queryKey: ["staff", "details", id],
-    queryFn: () => getStaffDetails(id),
+    queryKey: ["staff", "details", id, filters ?? null],
+    queryFn: () => getStaffDetails(id, filters),
     enabled: !!id,
   });
 };

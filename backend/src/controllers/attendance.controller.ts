@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { checkInSchema, checkOutSchema, assignShiftSchema } from "../validations/attendance.validation.js";
 import { isWithinRadius } from "../utils/geofencing.js";
+import { addUtcDays, getKarachiDayRange } from "../utils/karachiTime.js";
 
 const LATE_GRACE_MINUTES = 15;
 const EARLY_CHECKIN_MINUTES = 30;
@@ -154,11 +155,7 @@ export const checkIn = async (req: Request, res: Response) => {
   throw new ApiError(400, "You are not within the allowed radius of your location");
 }
 
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-
-    const tomorrow = new Date(today);
-    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    const { start: today, end: tomorrow } = getKarachiDayRange();
 
     const now = new Date();
 
@@ -262,29 +259,24 @@ export const checkOut = async (req: Request, res: Response) => {
   throw new ApiError(400, "You are not within the allowed radius of your location");
 }
 
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-
-    const tomorrow = new Date(today);
-    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    const { start: today, end: tomorrow } = getKarachiDayRange();
 
     let attendance = await prisma.attendance.findFirst({
         where: {
             staffId,
             date: { gte: today, lt: tomorrow },
-            status: { in: ["CHECKED_IN", "LATE"] },
+            status: { in: ["CHECKED_IN", "LATE", "MISSED_CHECKOUT"] },
         },  
     });
 
     if (!attendance) {
-        const yesterday = new Date(today);
-        yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+        const yesterday = addUtcDays(today, -1);
 
         attendance = await prisma.attendance.findFirst({
             where: {
                 staffId,
                 date: { gte: yesterday, lt: today },
-                status: { in: ["CHECKED_IN", "LATE"] },
+                status: { in: ["CHECKED_IN", "LATE", "MISSED_CHECKOUT"] },
             },
         });
     }
@@ -306,7 +298,7 @@ export const checkOut = async (req: Request, res: Response) => {
         where: { id: attendance.id },
         data: {
             checkOutTime: now,
-            status: "CHECKED_OUT",
+            status: attendance.status === "MISSED_CHECKOUT" ? "MISSED_CHECKOUT" : "CHECKED_OUT",
         },
     });
 

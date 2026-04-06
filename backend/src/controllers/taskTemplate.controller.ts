@@ -4,6 +4,42 @@ import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 
+const getMinutes = (date: Date) => date.getUTCHours() * 60 + date.getUTCMinutes();
+
+const validateTaskAgainstStaffShift = (
+  staff: { shiftStart: Date | null; shiftEnd: Date | null },
+  taskShiftStart: Date,
+  taskShiftEnd: Date
+) => {
+  if (!staff.shiftStart || !staff.shiftEnd) return;
+
+  const staffStartMin = getMinutes(staff.shiftStart);
+  const staffEndMin = getMinutes(staff.shiftEnd);
+  const taskStartMin = getMinutes(taskShiftStart);
+  const taskEndMin = getMinutes(taskShiftEnd);
+
+  const isOvernightShift = staffEndMin < staffStartMin;
+  let taskFitsInShift: boolean;
+
+  if (isOvernightShift) {
+    const isOvernightTask = taskEndMin < taskStartMin;
+    if (isOvernightTask) {
+      taskFitsInShift = taskStartMin >= staffStartMin && taskEndMin <= staffEndMin;
+    } else {
+      taskFitsInShift = taskStartMin >= staffStartMin || taskEndMin <= staffEndMin;
+    }
+  } else {
+    taskFitsInShift = taskStartMin >= staffStartMin && taskEndMin <= staffEndMin;
+  }
+
+  if (!taskFitsInShift) {
+    throw new ApiError(
+      400,
+      `Task shift (${taskShiftStart.toISOString()} - ${taskShiftEnd.toISOString()}) falls outside staff's attendance shift. Please update the staff's shift or choose a different time.`
+    );
+  }
+};
+
 export const createTaskTemplate = async (req: Request, res: Response) => {
   const result = createTaskSchema.safeParse(req.body);
 
@@ -45,9 +81,6 @@ export const editTaskTemplate = async (req: Request, res: Response) => {
     }));
     throw new ApiError(400, "Validation failed", errors);
   }
-
-  console.log("task template data is::",result.data);
-
   const template = await prisma.taskTemplate.findUnique({
     where: { id: taskTemplateId },
     include: { location: true , staff:true}
@@ -71,12 +104,22 @@ export const editTaskTemplate = async (req: Request, res: Response) => {
     }
   }
 
-  // if(result.data.shiftEnd || result.data.shiftStart)
-  // {
+  const nextLocationId = result.data.locationId ?? template.locationId;
+  const nextShiftStart = result.data.shiftStart ?? template.shiftStart;
+  const nextShiftEnd = result.data.shiftEnd ?? template.shiftEnd;
+  const assignedStaff = template.staff;
 
-  // }
+  if (assignedStaff) {
+    if (assignedStaff.companyId !== req.user!.companyId || !assignedStaff.isActive) {
+      throw new ApiError(400, "Assigned staff is no longer active for this company");
+    }
 
-  console.log("template::",template);
+    if (assignedStaff.locationId !== nextLocationId) {
+      throw new ApiError(400, "Assigned staff must belong to the same location");
+    }
+
+    validateTaskAgainstStaffShift(assignedStaff, nextShiftStart, nextShiftEnd);
+  }
 
   const updated = await prisma.taskTemplate.update({
     where: { id: taskTemplateId },
@@ -161,4 +204,3 @@ export const getTaskTemplatesByLocation=async (req:Request, res: Response)=>
     new ApiResponse(200,taskTemplates,"Task templates fetched successfully")
   );  
 };
-

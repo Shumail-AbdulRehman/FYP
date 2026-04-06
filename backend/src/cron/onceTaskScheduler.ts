@@ -1,5 +1,7 @@
 import cron from "node-cron";
 import { prisma } from "../prisma/prisma.js";
+import { resolveTaskInstanceWindow } from "./taskInstanceWindow.js";
+import { KARACHI_TIMEZONE, getKarachiDayRange } from "../utils/karachiTime.js";
 
 
 cron.schedule("*/5 * * * *",async()=>
@@ -8,11 +10,7 @@ cron.schedule("*/5 * * * *",async()=>
 
     console.log("Generating Once task instances...");
 
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-
-    const tomorrow = new Date(today);
-    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    const { start: today, end: tomorrow } = getKarachiDayRange();
 
         const onceTemplates = await prisma.taskTemplate.findMany({
       where: {
@@ -22,58 +20,49 @@ cron.schedule("*/5 * * * *",async()=>
           gte: today,
           lt: tomorrow
         }
-      }
+      },
+      include: {
+        staff: {
+          select: {
+            shiftStart: true,
+            shiftEnd: true,
+          },
+        },
+      },
     });
 
-    let created = 0;
+    const instancesToCreate = [];
 
     for (const template of onceTemplates) {
-      const existingInstance = await prisma.taskInstance.findFirst({
-        where: {
-          templateId: template.id
-        }
+      const { date, shiftStart, shiftEnd } = resolveTaskInstanceWindow({
+        baseDate: today,
+        taskShiftStart: template.shiftStart,
+        taskShiftEnd: template.shiftEnd,
+        staffShiftStart: template.staff?.shiftStart,
+        staffShiftEnd: template.staff?.shiftEnd,
       });
 
-      if (existingInstance) continue;
-
-      const shiftStart = new Date(today);
-      shiftStart.setUTCHours(
-        template.shiftStart.getUTCHours(),
-        template.shiftStart.getUTCMinutes(),
-        template.shiftStart.getUTCSeconds(),
-        0
-      );
-
-      const shiftEnd = new Date(today);
-      shiftEnd.setUTCHours(
-        template.shiftEnd.getUTCHours(),
-        template.shiftEnd.getUTCMinutes(),
-        template.shiftEnd.getUTCSeconds(),
-        0
-      );
-
-      if (shiftEnd <= shiftStart) {
-        shiftEnd.setUTCDate(shiftEnd.getUTCDate() + 1);
-      }
-
-      await prisma.taskInstance.create({
-        data: {
+      instancesToCreate.push({
           templateId: template.id,
           title: template.title,
-          date: today,
+          date,
           shiftStart,
           shiftEnd,
           staffId: template.staffId,
           locationId: template.locationId
-        }
       });
-
-      created++;
     }
+
+    const { count: created } = instancesToCreate.length
+      ? await prisma.taskInstance.createMany({
+          data: instancesToCreate,
+          skipDuplicates: true,
+        })
+      : { count: 0 };
 
     console.log(`Once Task instances created: ${created}`);
         
     } catch (error) {
          console.error("Once Task scheduler cron error:", error);
     }
-})
+}, { timezone: KARACHI_TIMEZONE })

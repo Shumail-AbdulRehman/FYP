@@ -3,6 +3,9 @@ import type { LoginForm } from "./types";
 import { useState } from "react";
 import { useLogin } from "./queries";
 import { Link } from "react-router-dom";
+import AuthShell from "@/components/common/AuthShell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const Login = () => {
   const {
@@ -25,99 +28,85 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950">
-      <div className="w-full max-w-md space-y-6 rounded-2xl border border-slate-700/60 bg-slate-900 p-8 shadow-2xl">
-        {/* Brand */}
-        <div className="text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-600 text-2xl font-bold text-white">
-            CO
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">
-            CleanOps
-          </h1>
-          <p className="mt-1 text-sm text-slate-400">Manager Portal</p>
-        </div>
-
+    <AuthShell
+      title="Welcome back"
+      subtitle="Sign in to monitor locations, review attendance, and keep work flowing without noise."
+      footer={
+        <p>
+          Don&apos;t have an account?{" "}
+          <Link to="/signup" className="font-medium text-primary hover:text-primary/80">
+            Sign up
+          </Link>
+        </p>
+      }
+    >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
               Email
             </label>
-            <input
+            <Input
               type="email"
               {...register("email", { required: "Email is required" })}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               placeholder="alice@sparkleclean.com"
             />
             {errors.email && (
-              <p className="mt-1 text-xs text-red-400">
+              <p className="mt-1 text-xs text-red-500">
                 {errors.email.message}
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
               Password
             </label>
-            <input
+            <Input
               type="password"
               {...register("password", { required: "Password is required" })}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               placeholder="••••••••"
             />
             {errors.password && (
-              <p className="mt-1 text-xs text-red-400">
+              <p className="mt-1 text-xs text-red-500">
                 {errors.password.message}
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="mb-1.5 block text-sm font-medium text-foreground">
               Role
             </label>
             <select
               {...register("role", { required: "Please select a role" })}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="flex h-11 w-full rounded-2xl border border-border/80 bg-background/90 px-4 py-2 text-sm shadow-xs outline-none focus:border-primary/60 focus:ring-4 focus:ring-primary/10"
             >
               <option value="">Select role</option>
               <option value="Manager">Manager</option>
               <option value="Staff">Staff</option>
             </select>
             {errors.role && (
-              <p className="mt-1 text-xs text-red-400">
+              <p className="mt-1 text-xs text-red-500">
                 {errors.role.message}
               </p>
             )}
           </div>
 
           {err && (
-            <div className="rounded-lg bg-red-500/10 px-4 py-2.5 text-sm text-red-400">
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               {err}
             </div>
           )}
 
-          <button
+          <Button
             type="submit"
             disabled={login.isPending}
-            className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-medium text-white shadow-sm shadow-indigo-600/30 transition-colors hover:bg-indigo-500 disabled:opacity-60"
+            className="h-11 w-full rounded-2xl"
           >
-            {login.isPending ? "Signing in…" : "Sign In"}
-          </button>
+            {login.isPending ? "Signing in..." : "Sign in"}
+          </Button>
         </form>
-
-        <p className="text-center text-sm text-slate-400">
-          Don't have an account?{" "}
-          <Link
-            to="/signup"
-            className="font-medium text-indigo-400 hover:text-indigo-300"
-          >
-            Sign Up
-          </Link>
-        </p>
-      </div>
-    </div>
+    </AuthShell>
   );
 };
 

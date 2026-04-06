@@ -1,15 +1,16 @@
 import cron from "node-cron";
 import { prisma } from "../prisma/prisma.js";
+import {
+    KARACHI_TIMEZONE,
+    getKarachiDayRange,
+    resolveAttendanceWindow,
+} from "../utils/karachiTime.js";
 
 cron.schedule("0 0 * * *", async () => {
     try {
         console.log("Creating daily attendance records...");
 
-        const today = new Date();
-        today.setUTCHours(0, 0, 0, 0);
-
-        const tomorrow = new Date(today);
-        tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+        const { start: today } = getKarachiDayRange();
 
         const eligibleStaff = await prisma.staff.findMany({
             where: {
@@ -26,54 +27,34 @@ cron.schedule("0 0 * * *", async () => {
             },
         });
 
-        let created = 0;
+        const attendanceToCreate = [];
 
         for (const staff of eligibleStaff) {
-            const existingAttendance = await prisma.attendance.findFirst({
-                where: {
-                    staffId: staff.id,
-                    date: { gte: today, lt: tomorrow },
-                },
+            const { date, expectedStart, expectedEnd } = resolveAttendanceWindow({
+                baseDate: today,
+                shiftStart: staff.shiftStart!,
+                shiftEnd: staff.shiftEnd!,
             });
 
-            if (existingAttendance) continue;
-
-            const expectedStart = new Date(today);
-            expectedStart.setUTCHours(
-                staff.shiftStart!.getUTCHours(),
-                staff.shiftStart!.getUTCMinutes(),
-                staff.shiftStart!.getUTCSeconds(),
-                0
-            );
-
-            const expectedEnd = new Date(today);
-            expectedEnd.setUTCHours(
-                staff.shiftEnd!.getUTCHours(),
-                staff.shiftEnd!.getUTCMinutes(),
-                staff.shiftEnd!.getUTCSeconds(),
-                0
-            );
-
-            if (expectedEnd <= expectedStart) {
-                expectedEnd.setUTCDate(expectedEnd.getUTCDate() + 1);
-            }
-
-            await prisma.attendance.create({
-                data: {
+            attendanceToCreate.push({
                     staffId: staff.id,
                     locationId: staff.locationId!,
-                    date: today,
+                    date,
                     expectedStart,
                     expectedEnd,
-                    status: "ABSENT",
-                },
+                    status: "ABSENT" as const,
             });
-
-            created++;
         }
+
+        const { count: created } = attendanceToCreate.length
+            ? await prisma.attendance.createMany({
+                data: attendanceToCreate,
+                skipDuplicates: true,
+            })
+            : { count: 0 };
 
         console.log(`Attendance records created: ${created}`);
     } catch (error) {
         console.error("Attendance cron error:", error);
     }
-});
+}, { timezone: KARACHI_TIMEZONE });

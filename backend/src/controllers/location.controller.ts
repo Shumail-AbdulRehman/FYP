@@ -5,9 +5,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 
 export const createLocation = async (req: Request, res: Response) => {
-
-  console.log("data from req::",req.body);
-  const result = createLocationSchema.safeParse(req.body.data);
+  const payload = req.body?.data ?? req.body;
+  const result = createLocationSchema.safeParse(payload);
 
   if (!result.success) {
     const errors = result.error.issues.map(e => ({
@@ -31,7 +30,8 @@ export const editLocation = async (req: Request, res: Response) => {
   const locationId = Number(req.params.id);
   if (isNaN(locationId)) throw new ApiError(400, "Invalid location id");
 
-  const result = createLocationSchema.safeParse(req.body);
+  const payload = req.body?.data ?? req.body;
+  const result = createLocationSchema.safeParse(payload);
 
   if (!result.success) {
     const errors = result.error.issues.map(e => ({

@@ -1,4 +1,11 @@
 import { client } from "@/api/client";
+import type { CreateTaskInput } from "./types";
+export type { CreateTaskInput } from "./types";
+
+export const createTaskTemplate = async (data: CreateTaskInput) => {
+  const res = await client.post("/task-template", data);
+  return res.data;
+};
 
 export interface EditTaskTemplateInput {
   title?: string;

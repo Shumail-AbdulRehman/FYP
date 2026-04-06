@@ -1,10 +1,10 @@
-type CheckInInput = {
+export type CheckInInput = {
   latitude: number;
   longitude: number;
 };
 
 
-type CheckOutInput = {
+export type CheckOutInput = {
   latitude: number;
   longitude: number;
 };
