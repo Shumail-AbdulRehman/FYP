@@ -96,6 +96,7 @@ model TaskTemplate {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   effectiveDate    DateTime
+  qrToken String @default(uuid())       
 
   @@index([locationId])
   @@index([isActive])

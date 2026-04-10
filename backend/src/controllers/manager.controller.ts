@@ -14,14 +14,7 @@ import { TokenPayload } from "../types/jwt.js";
 const TASK_START_GRACE_MINUTES = 5;
 
 
-export const you=(req:Request,res:Response)=>
-{
-    console.log("hello there");
 
-    res.status(200).json(
-        new ApiResponse(200,{},"hello there")
-    );
-}
 
 export const signupManager = async (req: Request, res: Response) => {
 

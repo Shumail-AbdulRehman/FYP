@@ -18,6 +18,7 @@ cron.schedule("*/5 * * * *", async () => {
     });
 
     
+    
     const incompleteTasks = await prisma.taskInstance.updateMany({
       where: {
         shiftEnd: { lt: now },

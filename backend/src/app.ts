@@ -16,9 +16,18 @@ import { runStartupCron } from "./cron/startupCron.js";
 
 dotenv.config();
 const app = express();
+const allowedOrigins = (process.env.FRONTEND_URL ?? "")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error(`Origin ${origin} not allowed by CORS`));
+    },
     credentials: true,
 }));
 app.use(express.json({ limit: "16kb" }));
@@ -34,6 +43,10 @@ import assignmentRouter from "./routes/assignment.route.js";
 import attendanceRouter from "./routes/attendance.route.js";
 import taskInstanceRouter from "./routes/taskInstance.route.js"
 import commonRouter from "./routes/common.route.js"
+
+
+
+
 
 app.use("/api/manager", managerRouter);
 app.use("/api/staff", staffRouter);

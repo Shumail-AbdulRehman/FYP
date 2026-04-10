@@ -131,7 +131,6 @@ export const refreshToken = async (req: Request, res: Response) => {
   throw new ApiError(401, "Invalid role");
 };
 
-
 export const logOut = async (req: Request, res: Response) => {
     
   const { id, role } = req.user!;
