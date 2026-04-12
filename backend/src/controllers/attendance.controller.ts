@@ -384,3 +384,8 @@ export const getStaffAttendance = async (req: Request, res: Response) => {
 
     res.status(200).json(new ApiResponse(200, attendance, "Staff attendance fetched successfully"));
 };
+
+export const temp=async()=>
+{
+    console.log("SAXSAX");
+}
