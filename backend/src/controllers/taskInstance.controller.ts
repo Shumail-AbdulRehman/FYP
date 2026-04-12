@@ -3,6 +3,7 @@ import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { getKarachiDayRange } from "../utils/karachiTime.js";
+import { uploadMultipleImages } from "../utils/cloudinary.js";
 
 
 export const getTodaysTasksForStaff = async (req: Request, res: Response) => {
@@ -40,7 +41,6 @@ const tasks = await prisma.taskInstance.findMany({
 
   res.status(200).json(new ApiResponse(200, tasks, "Today's tasks fetched successfully"));
 };
-
 
 export const startTask = async (req: Request, res: Response) => {
   const taskId = Number(req.params.taskId);
@@ -126,6 +126,7 @@ export const startTask = async (req: Request, res: Response) => {
 };
 
 export const completeTask = async (req: Request, res: Response) => {
+    const files = Array.isArray(req.files) ? req.files : [];
 
     const taskId = Number(req.params.taskId);
 
@@ -133,11 +134,15 @@ export const completeTask = async (req: Request, res: Response) => {
         throw new ApiError(400, "Invalid task id");
     }
 
-    const task= await prisma.taskInstance.findUnique({
-        where: {id: taskId, isActive:true}
+    if (!files.length) {
+        throw new ApiError(400, "At least one completion image is required");
+    }
+
+    const task = await prisma.taskInstance.findUnique({
+        where: { id: taskId }
     });
 
-    if (!task || task.staffId !== req.user!.id) {
+    if (!task || !task.isActive || task.staffId !== req.user!.id) {
         throw new ApiError(404, "Task not found for this staff");
     }
     
@@ -151,12 +156,20 @@ export const completeTask = async (req: Request, res: Response) => {
     {
         throw new ApiError(400, "Task time ended")
     }
+
+    const uploadedImages = await uploadMultipleImages(
+        files,
+        `task-instances/${taskId}/completion-proofs`
+    );
+
+    const proofImageUrls = uploadedImages.map((image) => image.secure_url);
     
     const taskCompleted = await prisma.taskInstance.update({
         where: { id: taskId },
         data: {
             status: "COMPLETED",
-            completedAt: now
+            completedAt: now,
+            proofImageUrls,
         }
     });
 
@@ -182,7 +195,7 @@ export const getTaskInstanceById = async (req: Request, res: Response) => {
 
     res.status(200).json(new ApiResponse(200, task, "Task fetched successfully"));  
 
-  };
+};
 
 export const getTasknstancesOfLocation = async (req: Request, res: Response) => {
 
