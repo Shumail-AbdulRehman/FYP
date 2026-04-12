@@ -5,6 +5,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { checkInSchema, checkOutSchema, assignShiftSchema } from "../validations/attendance.validation.js";
 import { isWithinRadius } from "../utils/geofencing.js";
 import { addUtcDays, getKarachiDayRange } from "../utils/karachiTime.js";
+import { uploadSingleImage } from "../utils/cloudinary.js";
 
 const LATE_GRACE_MINUTES = 15;
 const EARLY_CHECKIN_MINUTES = 30;
@@ -114,6 +115,10 @@ export const assignShiftToStaff = async (req: Request, res: Response) => {
 
 export const checkIn = async (req: Request, res: Response) => {
     
+    const file=req.file;
+
+    if(!file) throw new ApiError(400,"Check In image is required");
+
     if (req.user!.role !== "STAFF") {
         throw new ApiError(403, "Only staff can check in");
     }
@@ -196,7 +201,9 @@ const attendance = await prisma.attendance.findFirst({
     } else {
         status = "CHECKED_IN";
     }
+     const checkInFile = await uploadSingleImage(file, "attendance-selfies");
 
+    if(!checkInFile) throw new ApiError(501,"something went wrong while uploading check in image");
     const { count } = await prisma.attendance.updateMany({
         where: { id: attendance.id, status: "ABSENT" },
         data: {
@@ -204,6 +211,7 @@ const attendance = await prisma.attendance.findFirst({
             status,
             isLateCheckIn,
             lateMinutes,
+            checkInImage:checkInFile?.secure_url
         },
     });
 
@@ -218,6 +226,10 @@ const attendance = await prisma.attendance.findFirst({
 
 export const checkOut = async (req: Request, res: Response) => {
     
+    const file=req.file;
+
+    if(!file) throw new ApiError(400,"check out image is required");
+
     if (req.user!.role !== "STAFF") {
         throw new ApiError(403, "Only staff can check out");
     }
@@ -294,11 +306,16 @@ export const checkOut = async (req: Request, res: Response) => {
         }
     }
 
+    const checkOutImage=await uploadSingleImage(file,"attendance-check-out-image");
+
+    if(!checkOutImage) throw new ApiError(501,"something went wrong while uploading check out image");
+    
     const updated = await prisma.attendance.update({
         where: { id: attendance.id },
         data: {
             checkOutTime: now,
             status: attendance.status === "MISSED_CHECKOUT" ? "MISSED_CHECKOUT" : "CHECKED_OUT",
+            checkOutImage:checkOutImage.secure_url
         },
     });
 
