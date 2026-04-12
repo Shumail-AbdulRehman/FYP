@@ -9,7 +9,7 @@ const router = Router();
 
 router.patch("/staff/:id/shift", verifyJwt, authorize, assignShiftToStaff);
 router.post("/check-in", verifyJwt,upload.single("image"), checkIn);
-router.post("/check-out",upload.single("image") ,verifyJwt, checkOut);
+router.post("/check-out" ,verifyJwt,upload.single("image"), checkOut);
 router.get("/my", verifyJwt, getMyAttendance);
 router.get("/", verifyJwt, authorize, getStaffAttendance);
 
