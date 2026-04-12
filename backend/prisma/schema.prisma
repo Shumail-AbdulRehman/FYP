@@ -51,8 +51,7 @@ model Staff {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-
-   @@index([companyId])
+  @@index([companyId])
   @@index([locationId])
   @@index([isActive])
 }
@@ -72,11 +71,10 @@ model Location {
   updatedAt     DateTime       @updatedAt
   latitude      String
   longitude     String
-  radiusMeters  Int    @default(100)
+  radiusMeters  Int            @default(100)
 
   @@index([companyId])
   @@index([isActive])
-
 }
 
 model TaskTemplate {
@@ -96,70 +94,70 @@ model TaskTemplate {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   effectiveDate    DateTime
-  qrToken String @unique @default(uuid())      
+  qrToken          String         @unique @default(uuid())
 
   @@index([locationId])
   @@index([isActive])
 }
 
 model TaskInstance {
-  id          Int        @id @default(autoincrement())
-  template    TaskTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  templateId  Int?
-  title       String
-  date        DateTime
-  lateMinutes Int? 
-  shiftStart  DateTime
-  shiftEnd    DateTime
-  status      TaskStatus @default(PENDING)
-  isLate      Boolean    @default(false)
-  startedAt   DateTime?
-  completedAt DateTime?
-  staff       Staff?     @relation(fields: [staffId], references: [id], onDelete: SetNull)
-  staffId     Int?
-  location    Location   @relation(fields: [locationId], references: [id])
-  locationId  Int
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  isActive    Boolean  @default(true)
+  id             Int           @id @default(autoincrement())
+  template       TaskTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  templateId     Int?
+  title          String
+  date           DateTime
+  lateMinutes    Int?
+  shiftStart     DateTime
+  shiftEnd       DateTime
+  status         TaskStatus    @default(PENDING)
+  isLate         Boolean       @default(false)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  proofImageUrls String[]      @default([])
+  staff          Staff?        @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  staffId        Int?
+  location       Location      @relation(fields: [locationId], references: [id])
+  locationId     Int
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  isActive       Boolean       @default(true)
 
-
-  @@index([locationId, isActive, date])  
-  @@index([locationId, status]) 
   @@unique([templateId, date])
+  @@index([locationId, isActive, date])
+  @@index([locationId, status])
 }
 
-
 model Attendance {
-  id             Int       @id @default(autoincrement())
-  staff          Staff     @relation(fields: [staffId], references: [id])
-  staffId        Int
-  location       Location  @relation(fields: [locationId], references: [id])
-  locationId     Int
-  date           DateTime                    
-  checkInTime    DateTime?                   
-  checkOutTime   DateTime?                   
-  expectedStart  DateTime                    
-  expectedEnd    DateTime                    
-  status         AttendanceStatus @default(ABSENT)
-  isLateCheckIn  Boolean   @default(false)   
-  lateMinutes    Int?                        
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            Int              @id @default(autoincrement())
+  staff         Staff            @relation(fields: [staffId], references: [id])
+  staffId       Int
+  location      Location         @relation(fields: [locationId], references: [id])
+  locationId    Int
+  date          DateTime
+  checkInTime   DateTime?
+  checkOutTime  DateTime?
+  expectedStart DateTime
+  expectedEnd   DateTime
+  status        AttendanceStatus @default(ABSENT)
+  isLateCheckIn Boolean          @default(false)
+  lateMinutes   Int?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  checkInImage  String?
+  checkOutImage String?
 
-    @@index([locationId, date])
-  @@index([staffId])
   @@unique([staffId, date])
+  @@index([locationId, date])
+  @@index([staffId])
 }
 
 enum AttendanceStatus {
-  ABSENT        
-  CHECKED_IN    
-  CHECKED_OUT   
-  LATE          
+  ABSENT
+  CHECKED_IN
+  CHECKED_OUT
+  LATE
   MISSED_CHECKOUT
 }
-
 
 enum RecurringType {
   DAILY
