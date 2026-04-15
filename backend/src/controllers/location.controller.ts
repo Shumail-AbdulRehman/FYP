@@ -3,6 +3,7 @@ import { createLocationSchema } from "../validations/location.validation.js";
 import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
+import { addUtcDays, getKarachiDayRange, getKarachiDayRangeFromDateInput } from "../utils/karachiTime.js";
 
 export const createLocation = async (req: Request, res: Response) => {
   const payload = req.body?.data ?? req.body;
@@ -182,37 +183,30 @@ export const getLocationStatsById = async (req: Request, res: Response) => {
 
   
   if (dateFromParam && dateToParam) {
-    
-    const startDate = new Date(dateFromParam);
-    const endDate = new Date(dateToParam);
+    const startRange = getKarachiDayRangeFromDateInput(dateFromParam);
+    const endRange = getKarachiDayRangeFromDateInput(dateToParam);
 
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    if (!startRange || !endRange) {
       throw new ApiError(400, "Invalid dateFrom or dateTo format. Use YYYY-MM-DD");
     }
 
-    if (startDate > endDate) {
+    if (startRange.start > endRange.start) {
       throw new ApiError(400, "dateFrom must be before dateTo");
     }
 
-    startDate.setHours(0, 0, 0, 0);
-    endDate.setHours(23, 59, 59, 999);
-
-    dateFilter = { date: { gte: startDate, lte: endDate } };
-    const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    periodLabel = `${startDate.toISOString().split('T')[0]} to ${endDate.toISOString().split('T')[0]} (${diffDays} days)`;
+    dateFilter = { date: { gte: startRange.start, lt: endRange.end } };
+    const diffDays =
+      Math.round((endRange.start.getTime() - startRange.start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    periodLabel = `${dateFromParam} to ${dateToParam} (${diffDays} days)`;
   } else if (days) {
-    
     if (isNaN(days) || days <= 0) {
       throw new ApiError(400, "days must be a positive number");
     }
 
-    const endDate = new Date();
-    endDate.setHours(23, 59, 59, 999);
-    const startDate = new Date(endDate);
-    startDate.setDate(startDate.getDate() - days);
-    startDate.setHours(0, 0, 0, 0);
+    const { start: todayStart, end: tomorrowStart } = getKarachiDayRange();
+    const startDate = addUtcDays(todayStart, -(days - 1));
 
-    dateFilter = { date: { gte: startDate, lte: endDate } };
+    dateFilter = { date: { gte: startDate, lt: tomorrowStart } };
     periodLabel = `Last ${days} days`;
   }
 

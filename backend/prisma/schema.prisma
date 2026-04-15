@@ -71,7 +71,7 @@ model Location {
   updatedAt     DateTime       @updatedAt
   latitude      String
   longitude     String
-  radiusMeters  Int            @default(100)
+  radiusMeters  Int            @default(500)
 
   @@index([companyId])
   @@index([isActive])

@@ -17,7 +17,10 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 };
 
 export const refreshToken = async (req: Request, res: Response) => {
-  const incomingRefreshToken = req.cookies.refreshToken;
+  const incomingRefreshToken =
+    req.cookies.refreshToken ||
+    req.body?.refreshToken ||
+    req.header("x-refresh-token");
 
   if (!incomingRefreshToken) {
     throw new ApiError(401, "Refresh token missing");
@@ -74,13 +77,24 @@ export const refreshToken = async (req: Request, res: Response) => {
       email: user.email,
       name: user.name,
       role,
+      companyId: user.companyId,
     };
 
     return res
       .status(200)
       .cookie("accessToken", accessToken, cookieOptions)
       .cookie("refreshToken", newRefreshToken, cookieOptions)
-      .json(new ApiResponse(200, safeUser, "Token refreshed successfully"));
+      .json(
+        new ApiResponse(
+          200,
+          {
+            ...safeUser,
+            accessToken,
+            refreshToken: newRefreshToken,
+          },
+          "Token refreshed successfully"
+        )
+      );
   }
 
   if (role === "STAFF") {
@@ -119,13 +133,25 @@ export const refreshToken = async (req: Request, res: Response) => {
       email: user.email,
       name: user.name,
       role,
+      companyId: user.companyId,
+      locationId: user.locationId,
     };
 
     return res
       .status(200)
       .cookie("accessToken", accessToken, cookieOptions)
       .cookie("refreshToken", newRefreshToken, cookieOptions)
-      .json(new ApiResponse(200, safeUser, "Token refreshed successfully"));
+      .json(
+        new ApiResponse(
+          200,
+          {
+            ...safeUser,
+            accessToken,
+            refreshToken: newRefreshToken,
+          },
+          "Token refreshed successfully"
+        )
+      );
   }
 
   throw new ApiError(401, "Invalid role");

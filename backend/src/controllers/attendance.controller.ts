@@ -4,8 +4,9 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { checkInSchema, checkOutSchema, assignShiftSchema } from "../validations/attendance.validation.js";
 import { isWithinRadius } from "../utils/geofencing.js";
-import { addUtcDays, getKarachiDayRange } from "../utils/karachiTime.js";
+import { addUtcDays, getKarachiDayRange, getKarachiDayRangeFromDateInput } from "../utils/karachiTime.js";
 import { uploadSingleImage } from "../utils/cloudinary.js";
+import { syncTodaysOpenAttendanceWindow } from "../utils/syncAttendanceWindow.js";
 
 const LATE_GRACE_MINUTES = 15;
 const EARLY_CHECKIN_MINUTES = 30;
@@ -108,6 +109,13 @@ export const assignShiftToStaff = async (req: Request, res: Response) => {
         },
     });
 
+    await syncTodaysOpenAttendanceWindow({
+        staffId,
+        locationId: updated.locationId,
+        shiftStart: updated.shiftStart,
+        shiftEnd: updated.shiftEnd,
+    });
+
     res
         .status(200)
         .json(new ApiResponse(200, updated, "Shift assigned to staff successfully"));
@@ -116,6 +124,7 @@ export const assignShiftToStaff = async (req: Request, res: Response) => {
 export const checkIn = async (req: Request, res: Response) => {
     
     const file=req.file;
+    
 
     if(!file) throw new ApiError(400,"Check In image is required");
 
@@ -148,6 +157,14 @@ export const checkIn = async (req: Request, res: Response) => {
 
     const { latitude, longitude } = result.data;
 
+    const actualDistance = (await import("../utils/geofencing.js")).getDistanceMeters(
+      Number(latitude), Number(longitude),
+      Number(location.latitude), Number(location.longitude)
+    );
+    console.log("[DEBUG check-in] worker:", latitude, longitude,
+      "| location:", Number(location.latitude), Number(location.longitude),
+      "| distance:", Math.round(actualDistance), "m | radius:", location.radiusMeters, "m");
+
     if (
   !isWithinRadius(
     Number(latitude),
@@ -157,7 +174,7 @@ export const checkIn = async (req: Request, res: Response) => {
     location.radiusMeters
   )
 ) {
-  throw new ApiError(400, "You are not within the allowed radius of your location");
+  throw new ApiError(400, `You are not within the allowed radius of your location (you are ${Math.round(actualDistance)}m away, allowed: ${location.radiusMeters}m)`);
 }
 
     const { start: today, end: tomorrow } = getKarachiDayRange();
@@ -220,7 +237,7 @@ const attendance = await prisma.attendance.findFirst({
     }
 
     const updated = await prisma.attendance.findUnique({ where: { id: attendance.id } });
-
+    console.log("updated attendace is::",updated);
     res.status(200).json(new ApiResponse(200, updated, `Checked in successfully${isLateCheckIn ? ` (late by ${lateMinutes} minutes)` : ""}`));
 };
 
@@ -353,13 +370,27 @@ export const getStaffAttendance = async (req: Request, res: Response) => {
 
     if (req.query.from || req.query.to) {
         filters.date = {};
+        const fromRange = req.query.from
+            ? getKarachiDayRangeFromDateInput(req.query.from as string)
+            : null;
+        const toRange = req.query.to
+            ? getKarachiDayRangeFromDateInput(req.query.to as string)
+            : null;
+
         if (req.query.from) {
-            filters.date.gte = new Date(req.query.from as string);
+            if (!fromRange) {
+                throw new ApiError(400, "Invalid from format. Use YYYY-MM-DD");
+            }
+            filters.date.gte = fromRange.start;
         }
         if (req.query.to) {
-            const toDate = new Date(req.query.to as string);
-            toDate.setHours(23, 59, 59, 999);
-            filters.date.lte = toDate;
+            if (!toRange) {
+                throw new ApiError(400, "Invalid to format. Use YYYY-MM-DD");
+            }
+            filters.date.lt = toRange.end;
+        }
+        if (fromRange && toRange && fromRange.start > toRange.start) {
+            throw new ApiError(400, "from must be before or equal to to");
         }
     }
 
@@ -384,4 +415,3 @@ export const getStaffAttendance = async (req: Request, res: Response) => {
 
     res.status(200).json(new ApiResponse(200, attendance, "Staff attendance fetched successfully"));
 };
-

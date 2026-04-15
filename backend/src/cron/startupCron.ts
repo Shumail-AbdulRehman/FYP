@@ -1,6 +1,7 @@
 import { prisma } from "../prisma/prisma.js";
 import { resolveTaskInstanceWindow } from "./taskInstanceWindow.js";
 import { getKarachiDayRange, resolveAttendanceWindow } from "../utils/karachiTime.js";
+import { syncTodaysOpenAttendanceWindow } from "../utils/syncAttendanceWindow.js";
 
 
 export async function runStartupCron(): Promise<void> {
@@ -49,6 +50,17 @@ export async function runStartupCron(): Promise<void> {
                 skipDuplicates: true,
             })
             : { count: 0 };
+
+        await Promise.all(
+            eligibleStaff.map((staff) =>
+                syncTodaysOpenAttendanceWindow({
+                    staffId: staff.id,
+                    locationId: staff.locationId,
+                    shiftStart: staff.shiftStart,
+                    shiftEnd: staff.shiftEnd,
+                })
+            )
+        );
 
        
 

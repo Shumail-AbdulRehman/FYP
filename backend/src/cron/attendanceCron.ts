@@ -5,8 +5,9 @@ import {
     getKarachiDayRange,
     resolveAttendanceWindow,
 } from "../utils/karachiTime.js";
+import { syncTodaysOpenAttendanceWindow } from "../utils/syncAttendanceWindow.js";
 
-cron.schedule("0 0 * * *", async () => {
+cron.schedule("*/5 * * * *", async () => {
     try {
         console.log("Creating daily attendance records...");
 
@@ -52,6 +53,17 @@ cron.schedule("0 0 * * *", async () => {
                 skipDuplicates: true,
             })
             : { count: 0 };
+
+        await Promise.all(
+            eligibleStaff.map((staff) =>
+                syncTodaysOpenAttendanceWindow({
+                    staffId: staff.id,
+                    locationId: staff.locationId,
+                    shiftStart: staff.shiftStart,
+                    shiftEnd: staff.shiftEnd,
+                })
+            )
+        );
 
         console.log(`Attendance records created: ${created}`);
     } catch (error) {

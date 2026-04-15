@@ -4,6 +4,8 @@ import { prisma } from "../prisma/prisma.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { generateAccessToken, generateRefreshToken, isPasswordCorrect } from "../utils/auth.js";
+import { getKarachiDayRangeFromDateInput, getKarachiMonthRange } from "../utils/karachiTime.js";
+import { syncTodaysOpenAttendanceWindow } from "../utils/syncAttendanceWindow.js";
 
 
 export const loginStaff = async (req: Request, res: Response) => {
@@ -58,6 +60,9 @@ export const loginStaff = async (req: Request, res: Response) => {
         email: staff.email,
         role: staff.role,
         companyId: staff.companyId,
+        locationId: staff.locationId,
+        accessToken,
+        refreshToken,
       }, "Login successful")
     );
 };
@@ -299,6 +304,8 @@ export const editStaff = async (req: Request, res: Response) => {
 
   console.log("staff data::",result.data);
 
+  const shiftChanged = result.data.shiftStart !== undefined || result.data.shiftEnd !== undefined;
+
  if (result.data.shiftStart || result.data.shiftEnd) {
   
   const newStart = result.data.shiftStart ?? staff.shiftStart;
@@ -348,6 +355,15 @@ export const editStaff = async (req: Request, res: Response) => {
     }
   });
 
+  if (shiftChanged) {
+    await syncTodaysOpenAttendanceWindow({
+      staffId,
+      locationId: updated.locationId,
+      shiftStart: updated.shiftStart,
+      shiftEnd: updated.shiftEnd,
+    });
+  }
+
   res.status(200).json(new ApiResponse(200, updated, "Staff updated successfully"));
 };
 
@@ -359,7 +375,7 @@ export const getStaffDetails = async (req: Request, res: Response) => {
   const dateFromParam = req.query.dateFrom as string | undefined;
   const dateToParam = req.query.dateTo as string | undefined;
 
-  let dateFilter: { gte?: Date; lte?: Date } | undefined;
+  let dateFilter: { gte?: Date; lt?: Date } | undefined;
   let periodLabel = "All time";
 
   if (monthParam) {
@@ -375,29 +391,34 @@ export const getStaffDetails = async (req: Request, res: Response) => {
       throw new ApiError(400, "Invalid month value");
     }
 
-    const startDate = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0, 0));
-    const endDate = new Date(Date.UTC(year, monthIndex + 1, 0, 23, 59, 59, 999));
-    dateFilter = { gte: startDate, lte: endDate };
-    periodLabel = startDate.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+    const monthRange = getKarachiMonthRange(year, monthIndex);
+    if (!monthRange) {
+      throw new ApiError(400, "Invalid month value");
+    }
+
+    dateFilter = { gte: monthRange.start, lt: monthRange.end };
+    periodLabel = new Date(Date.UTC(year, monthIndex, 1)).toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    });
   } else if (dateFromParam || dateToParam) {
     if (!dateFromParam || !dateToParam) {
       throw new ApiError(400, "Both dateFrom and dateTo are required together");
     }
 
-    const startDate = new Date(dateFromParam);
-    const endDate = new Date(dateToParam);
+    const startRange = getKarachiDayRangeFromDateInput(dateFromParam);
+    const endRange = getKarachiDayRangeFromDateInput(dateToParam);
 
-    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    if (!startRange || !endRange) {
       throw new ApiError(400, "Invalid dateFrom or dateTo format. Use YYYY-MM-DD");
     }
 
-    if (startDate > endDate) {
+    if (startRange.start > endRange.start) {
       throw new ApiError(400, "dateFrom must be before dateTo");
     }
 
-    startDate.setUTCHours(0, 0, 0, 0);
-    endDate.setUTCHours(23, 59, 59, 999);
-    dateFilter = { gte: startDate, lte: endDate };
+    dateFilter = { gte: startRange.start, lt: endRange.end };
     periodLabel = `${dateFromParam} to ${dateToParam}`;
   }
 

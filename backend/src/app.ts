@@ -16,14 +16,52 @@ import { runStartupCron } from "./cron/startupCron.js";
 
 dotenv.config();
 const app = express();
+const parsedPort = Number.parseInt((process.env.PORT ?? "").trim(), 10);
+const port = Number.isFinite(parsedPort) ? parsedPort : 8080;
 const allowedOrigins = (process.env.FRONTEND_URL ?? "")
     .split(",")
-    .map((origin) => origin.trim().replace(/\/+$/, ""))
+    .map((origin) =>
+        origin
+            .trim()
+            .replace(/^['"]+|['"]+$/g, "")
+            .replace(/\/+$/, "")
+    )
     .filter(Boolean);
+
+const isPrivateDevelopmentOrigin = (origin: string) => {
+    try {
+        const url = new URL(origin);
+
+        if (!["http:", "https:"].includes(url.protocol)) {
+            return false;
+        }
+
+        const hostname = url.hostname;
+
+        if (hostname === "localhost" || hostname === "127.0.0.1") {
+            return true;
+        }
+
+        return (
+            /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+            /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+            /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname)
+        );
+    } catch {
+        return false;
+    }
+};
 
 app.use(cors({
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        const normalizedOrigin = origin?.replace(/\/+$/, "");
+        const isDevelopment = process.env.NODE_ENV !== "production";
+
+        if (
+            !origin ||
+            (normalizedOrigin && allowedOrigins.includes(normalizedOrigin)) ||
+            (normalizedOrigin && isDevelopment && isPrivateDevelopmentOrigin(normalizedOrigin))
+        ) {
             return callback(null, true);
         }
         return callback(new Error(`Origin ${origin} not allowed by CORS`));
@@ -69,8 +107,8 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     res.status(500).json({ message: "Something went wrong" });
 });
 
-app.listen(process.env.PORT, async () => {
-    console.log(`Server is listening at port ${process.env.PORT}`);
+app.listen(port, async () => {
+    console.log(`Server is listening at port ${port}`);
     await runStartupCron();
 });
 

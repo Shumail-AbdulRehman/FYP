@@ -1,15 +1,15 @@
 import { z } from "zod";
 
 export const checkInSchema = z.object({
-    latitude: z.number({ message: "Latitude is required" }),
-    longitude: z.number({ message: "Longitude is required" }),
+    latitude: z.coerce.number({ message: "Latitude is required" }),
+    longitude: z.coerce.number({ message: "Longitude is required" }),
 });
 
 export type CheckInInput = z.infer<typeof checkInSchema>;
 
 export const checkOutSchema = z.object({
-    latitude: z.number({ message: "Latitude is required" }),
-    longitude: z.number({ message: "Longitude is required" }),
+    latitude: z.coerce.number({ message: "Latitude is required" }),
+    longitude: z.coerce.number({ message: "Longitude is required" }),
 });
 
 export type CheckOutInput = z.infer<typeof checkOutSchema>;

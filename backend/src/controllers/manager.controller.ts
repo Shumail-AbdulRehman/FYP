@@ -324,12 +324,19 @@ export const getTodayStatus = async (req: Request, res: Response) => {
             !attendance.checkOutTime &&
             attendance.expectedStart > now;
 
+        const attentionCount =
+            taskCounts.missed +
+            taskCounts.notCompletedInTime +
+            taskCounts.late +
+            (attendance?.status === "MISSED_CHECKOUT" ? 1 : 0);
+
         return {
             staff: member,
             attendance,
-            attendanceDisplayStatus: isShiftNotStarted ? "SHIFT_NOT_STARTED" : attendance?.status ?? "ABSENT",
+            attendanceDisplayStatus: isShiftNotStarted ? "SHIFT_NOT_STARTED" : attendance?.status ?? "NO_RECORD_TODAY",
             tasks: normalizedTasks,
             taskCounts,
+            attentionCount,
             flags: {
                 isAbsent: !!attendance && attendance.status === "ABSENT" && !isShiftNotStarted,
                 isPresent: !!isPresent,
@@ -337,11 +344,7 @@ export const getTodayStatus = async (req: Request, res: Response) => {
                 isShiftNotStarted,
                 hasPendingTasks: taskCounts.pending > 0,
                 hasInProgressTasks: taskCounts.inProgress > 0,
-                hasAttentionTasks:
-                    taskCounts.missed > 0 ||
-                    taskCounts.notCompletedInTime > 0 ||
-                    taskCounts.late > 0 ||
-                    attendance?.status === "MISSED_CHECKOUT",
+                hasAttentionTasks: attentionCount > 0,
             },
         };
     });
@@ -352,16 +355,13 @@ export const getTodayStatus = async (req: Request, res: Response) => {
         absent: staffStatus.filter((entry) => entry.flags.isAbsent).length,
         lateAttendance: staffStatus.filter((entry) => entry.flags.isLateAttendance).length,
         shiftNotStarted: staffStatus.filter((entry) => entry.flags.isShiftNotStarted).length,
+        staffNeedingReview: staffStatus.filter((entry) => entry.flags.hasAttentionTasks).length,
         pendingTasks: staffStatus.reduce((sum, entry) => sum + entry.taskCounts.pending, 0),
         inProgressTasks: staffStatus.reduce((sum, entry) => sum + entry.taskCounts.inProgress, 0),
         completedTasks: staffStatus.reduce((sum, entry) => sum + entry.taskCounts.completed, 0),
         attentionTasks: staffStatus.reduce(
             (sum, entry) =>
-                sum +
-                entry.taskCounts.missed +
-                entry.taskCounts.notCompletedInTime +
-                entry.taskCounts.late +
-                (entry.attendance?.status === "MISSED_CHECKOUT" ? 1 : 0),
+                sum + entry.attentionCount,
             0
         ),
     };

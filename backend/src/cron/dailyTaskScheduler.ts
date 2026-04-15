@@ -3,7 +3,7 @@ import { prisma } from "../prisma/prisma.js";
 import { resolveTaskInstanceWindow } from "./taskInstanceWindow.js";
 import { KARACHI_TIMEZONE, getKarachiDayRange } from "../utils/karachiTime.js";
 
-cron.schedule("0 0 * * *", async () => {
+cron.schedule("*/5 * * * *", async () => {
   try {
     console.log("Generating daily task instances...");
 
