@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetLocationById } from "./queries";
@@ -37,7 +38,8 @@ import {
   Plus,
 } from "lucide-react";
 
-const toDateStr = (d: Date) => d.toISOString().split("T")[0];
+const toDateStr = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const fmtCoord = (v: string) => parseFloat(v).toFixed(6);
 const fmtTime = (d: string | null) => {
   if (!d) return "—";
@@ -516,6 +518,22 @@ function TemplatesTab({
                 </p>
               </div>
             </div>
+
+            {t.qrToken && (
+              <div className="mt-3 border-t border-gray-100 pt-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">QR Code</p>
+                <div className="flex flex-col items-center gap-2 rounded-lg bg-white p-3 border border-gray-100">
+                  <QRCodeSVG
+                    value={t.qrToken}
+                    size={140}
+                    level="M"
+                    bgColor="#ffffff"
+                    fgColor="#1a1a1a"
+                  />
+                  <p className="text-[10px] text-gray-400 font-mono break-all text-center select-all">{t.qrToken}</p>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -828,6 +846,7 @@ const LocationDetailPage: React.FC = () => {
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Shift</th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Late</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Proof</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -851,11 +870,22 @@ const LocationDetailPage: React.FC = () => {
                         <span className="text-emerald-400">On time</span>
                       )}
                     </td>
+                    <td className="px-5 py-3.5">
+                      {ti.proofImageUrls && ti.proofImageUrls.length > 0 ? (
+                        <div className="flex gap-1">
+                          {ti.proofImageUrls.map((url: string, i: number) => (
+                            <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                              <img src={url} alt={`Proof ${i + 1}`} className="h-9 w-9 rounded-md object-cover border border-gray-200 hover:ring-2 hover:ring-teal-400 transition-all cursor-pointer" />
+                            </a>
+                          ))}
+                        </div>
+                      ) : <span className="text-gray-400">—</span>}
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center text-sm text-gray-400">
+                  <td colSpan={6} className="px-5 py-8 text-center text-sm text-gray-400">
                     No task instances for this period.
                   </td>
                 </tr>

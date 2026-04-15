@@ -35,6 +35,7 @@ interface StaffStatusEntry {
     lateMinutes: number | null;
   } | null;
   attendanceDisplayStatus: string;
+  attentionCount: number;
   tasks: Array<{
     id: number;
     title: string;
@@ -72,6 +73,9 @@ const fmtTime = (value: string | null) => {
   return new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 };
 
+const toLocalDateValue = (value: Date) =>
+  `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+
 export default function TodayStatusPage() {
   const navigate = useNavigate();
   const [locationId, setLocationId] = useState<string>("all");
@@ -94,8 +98,7 @@ export default function TodayStatusPage() {
   const summary = payload?.summary;
   const locations = payload?.locations ?? [];
   const staffStatus: StaffStatusEntry[] = payload?.staffStatus ?? [];
-  const todayDate =
-    payload?.date ? new Date(payload.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+  const todayDate = payload?.date ? toLocalDateValue(new Date(payload.date)) : toLocalDateValue(new Date());
 
   const filteredStaff = staffStatus.filter((entry) => {
     const matchesSearch =
@@ -156,10 +159,12 @@ export default function TodayStatusPage() {
       render: (entry) => (
         <div className="space-y-1">
           <div>
-            <StatusBadge status={entry.attendanceDisplayStatus ?? entry.attendance?.status ?? "ABSENT"} />
+            <StatusBadge status={entry.attendanceDisplayStatus ?? entry.attendance?.status ?? "NO_RECORD_TODAY"} />
           </div>
           <p className="text-xs text-muted-foreground">
-            In {fmtTime(entry.attendance?.checkInTime ?? null)} / Out {fmtTime(entry.attendance?.checkOutTime ?? null)}
+            {entry.attendance
+              ? `In ${fmtTime(entry.attendance.checkInTime ?? null)} / Out ${fmtTime(entry.attendance.checkOutTime ?? null)}`
+              : "No attendance row for today"}
           </p>
         </div>
       ),
@@ -173,7 +178,7 @@ export default function TodayStatusPage() {
             Pending {entry.taskCounts.pending} | In progress {entry.taskCounts.inProgress} | Completed {entry.taskCounts.completed}
           </p>
           <p className="text-muted-foreground">
-            Attention {entry.taskCounts.missed + entry.taskCounts.notCompletedInTime + entry.taskCounts.late}
+            Attention {entry.attentionCount}
           </p>
         </div>
       ),
@@ -252,12 +257,12 @@ export default function TodayStatusPage() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-3xl border border-white/15 bg-white/10 p-5">
-              <p className="text-sm text-white/70">Active staff today</p>
+              <p className="text-sm text-white/70">Active staff</p>
               <p className="mt-2 text-3xl font-semibold">{summary?.totalStaff ?? 0}</p>
             </div>
             <div className="rounded-3xl border border-white/15 bg-white/10 p-5">
-              <p className="text-sm text-white/70">Needs attention</p>
-              <p className="mt-2 text-3xl font-semibold">{summary?.attentionTasks ?? 0}</p>
+              <p className="text-sm text-white/70">Needs review</p>
+              <p className="mt-2 text-3xl font-semibold">{summary?.staffNeedingReview ?? 0}</p>
             </div>
             <div className="rounded-3xl border border-white/15 bg-white/10 p-5">
               <p className="text-sm text-white/70">Absent</p>
@@ -379,7 +384,7 @@ export default function TodayStatusPage() {
           )}
         </SurfaceCard>
 
-        <SurfaceCard title="Needs review" description="Late, missed, or not-in-time work that deserves attention.">
+        <SurfaceCard title="Needs review" description="Late tasks, missed work, not-in-time completions, or missed checkout records.">
           {attentionStaff.length > 0 ? (
             <div className="space-y-3">
               {attentionStaff.map((entry) => (
@@ -395,7 +400,7 @@ export default function TodayStatusPage() {
                     <div>
                       <p className="font-medium text-foreground">{entry.staff.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {entry.taskCounts.missed + entry.taskCounts.notCompletedInTime + entry.taskCounts.late} attention items
+                        {entry.attentionCount} review item{entry.attentionCount === 1 ? "" : "s"}
                       </p>
                     </div>
                   </div>

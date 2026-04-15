@@ -14,6 +14,7 @@ const COLORS: Record<string, string> = {
   MISSED_CHECKOUT:      "border-rose-200 bg-rose-100 text-rose-700",
   ABSENT:               "border-red-200 bg-red-100 text-red-700",
   SHIFT_NOT_STARTED:    "border-slate-200 bg-slate-100 text-slate-700",
+  NO_RECORD_TODAY:      "border-slate-200 bg-slate-100 text-slate-600",
 
   ACTIVE:               "border-emerald-200 bg-emerald-100 text-emerald-700",
   INACTIVE:             "border-slate-200 bg-slate-100 text-slate-600",

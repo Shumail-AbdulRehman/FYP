@@ -50,6 +50,7 @@ interface StaffTaskInstanceRow {
   isLate: boolean;
   startedAt: string | null;
   completedAt: string | null;
+  proofImageUrls?: string[];
 }
 
 interface StaffAttendanceRow {
@@ -63,6 +64,8 @@ interface StaffAttendanceRow {
   status: string;
   isLateCheckIn: boolean;
   lateMinutes: number | null;
+  checkInImage?: string | null;
+  checkOutImage?: string | null;
 }
 
 interface StaffTaskTemplateRow {
@@ -95,7 +98,8 @@ const getCurrentMonthValue = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 };
 
-const toDateInputValue = (date: Date) => date.toISOString().slice(0, 10);
+const toDateInputValue = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 const getMonthOptions = (count = 12) => {
   const options: { value: string; label: string }[] = [];
@@ -149,6 +153,20 @@ const StaffDetailPage: React.FC = () => {
       },
       { key: "startedAt", header: "Started", render: (instance) => <span>{fmtDateTime(instance.startedAt)}</span> },
       { key: "completedAt", header: "Completed", render: (instance) => <span>{fmtDateTime(instance.completedAt)}</span> },
+      {
+        key: "proof",
+        header: "Proof",
+        render: (instance) =>
+          instance.proofImageUrls && instance.proofImageUrls.length > 0 ? (
+            <div className="flex gap-1">
+              {instance.proofImageUrls.map((url, i) => (
+                <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                  <img src={url} alt={`Proof ${i + 1}`} className="h-9 w-9 rounded-md object-cover border border-gray-200 hover:ring-2 hover:ring-teal-400 transition-all cursor-pointer" />
+                </a>
+              ))}
+            </div>
+          ) : <span className="text-xs text-muted-foreground">—</span>,
+      },
     ],
     [],
   );
@@ -177,6 +195,26 @@ const StaffDetailPage: React.FC = () => {
 
           return <span className="text-xs text-muted-foreground">—</span>;
         },
+      },
+      {
+        key: "checkInImg",
+        header: "Check-In Photo",
+        render: (attendance) =>
+          attendance.checkInImage ? (
+            <a href={attendance.checkInImage} target="_blank" rel="noopener noreferrer">
+              <img src={attendance.checkInImage} alt="Check-in" className="h-9 w-9 rounded-md object-cover border border-gray-200 hover:ring-2 hover:ring-teal-400 transition-all cursor-pointer" />
+            </a>
+          ) : <span className="text-xs text-muted-foreground">—</span>,
+      },
+      {
+        key: "checkOutImg",
+        header: "Check-Out Photo",
+        render: (attendance) =>
+          attendance.checkOutImage ? (
+            <a href={attendance.checkOutImage} target="_blank" rel="noopener noreferrer">
+              <img src={attendance.checkOutImage} alt="Check-out" className="h-9 w-9 rounded-md object-cover border border-gray-200 hover:ring-2 hover:ring-teal-400 transition-all cursor-pointer" />
+            </a>
+          ) : <span className="text-xs text-muted-foreground">—</span>,
       },
     ],
     [],

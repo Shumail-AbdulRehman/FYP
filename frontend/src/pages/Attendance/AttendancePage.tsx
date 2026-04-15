@@ -25,6 +25,8 @@ interface AttendanceRecord {
   status: string;
   isLateCheckIn: boolean;
   lateMinutes: number | null;
+  checkInImage: string | null;
+  checkOutImage: string | null;
   staff: { id: number; name: string; email: string };
   location: { id: number; name: string };
 }
@@ -40,7 +42,8 @@ const fmtTime = (d: string | null) => {
 const inputCls =
   "h-11 rounded-2xl border border-border/80 bg-background/90 px-4 py-2 text-sm shadow-xs outline-none focus:border-primary/60 focus:ring-4 focus:ring-primary/10";
 
-const toDateInputValue = (date: Date) => date.toISOString().slice(0, 10);
+const toDateInputValue = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 const getCurrentMonthValue = () => {
   const now = new Date();
@@ -185,6 +188,24 @@ export default function AttendancePage() {
         r.lateMinutes
           ? <span className="font-medium text-amber-600">+{r.lateMinutes}m</span>
           : <span className="text-gray-400">—</span>,
+    },
+    {
+      key: "checkInImg", header: "Check-In Photo",
+      render: (r) =>
+        r.checkInImage ? (
+          <a href={r.checkInImage} target="_blank" rel="noopener noreferrer">
+            <img src={r.checkInImage} alt="Check-in" className="h-10 w-10 rounded-lg object-cover border border-gray-200 hover:ring-2 hover:ring-teal-400 transition-all cursor-pointer" />
+          </a>
+        ) : <span className="text-gray-400">—</span>,
+    },
+    {
+      key: "checkOutImg", header: "Check-Out Photo",
+      render: (r) =>
+        r.checkOutImage ? (
+          <a href={r.checkOutImage} target="_blank" rel="noopener noreferrer">
+            <img src={r.checkOutImage} alt="Check-out" className="h-10 w-10 rounded-lg object-cover border border-gray-200 hover:ring-2 hover:ring-teal-400 transition-all cursor-pointer" />
+          </a>
+        ) : <span className="text-gray-400">—</span>,
     },
   ];
 
