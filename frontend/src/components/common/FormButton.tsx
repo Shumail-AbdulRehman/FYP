@@ -1,3 +1,9 @@
+/**
+ * @component FormButton
+ * @author Lira Zakhn (Frontend)
+ * @description Submit/action button for forms with built-in loading state.
+ *              Automatically disables and shows a spinner while async operations run.
+ */
 import LoadingSpinner from './LoadingSpinner';
 
 interface FormButtonProps {
@@ -28,6 +34,7 @@ const FormButton = ({
         ${className}
       `}
     >
+      {/* Show spinner alongside text when loading, plain text otherwise */}
       {loading ? (
         <>
           
