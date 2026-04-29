@@ -1,3 +1,10 @@
+/**
+ * @component LoadingSpinner
+ * @author Lira Zakhn (Frontend)
+ * @description Versatile animated spinner supporting three sizes and three display modes:
+ *              inline, full-screen overlay, and partial overlay.
+ *              Color and thickness are customizable via props.
+ */
 import { cn } from "@/lib/utils";
 
 type SpinnerSize = "small" | "default" | "large";
@@ -29,6 +36,7 @@ export default function LoadingSpinner({
   color,
   thickness = 3,
 }: LoadingSpinnerProps) {
+  // Derive spinner and track colors from the optional color prop or CSS variables
   const spinnerColor = color ?? "var(--primary)";
   const trackColor = color ? `${color}24` : "color-mix(in oklab, var(--primary) 16%, white)";
 
