@@ -1,3 +1,9 @@
+/**
+ * @component SurfaceCard
+ * @author Lira Zakhn (Frontend)
+ * @description Styled card wrapper that optionally renders a header with title and description.
+ *              Used as a layout surface throughout the dashboard for content sections.
+ */
 import type { ReactNode } from "react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +26,7 @@ export default function SurfaceCard({
 }: SurfaceCardProps) {
   return (
     <Card className={cn("overflow-hidden", className)}>
+      {/* Header section is only rendered when at least a title or description is provided */}
       {(title || description) && (
         <CardHeader className="border-b border-border/60">
           {title && <CardTitle>{title}</CardTitle>}
