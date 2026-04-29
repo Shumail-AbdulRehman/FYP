@@ -1,3 +1,9 @@
+/**
+ * @component TextInput
+ * @author Lira Zakhn (Frontend)
+ * @description Controlled text input integrated with React Hook Form.
+ *              Renders a label, input field, and inline validation error message.
+ */
 
 import type { UseFormRegisterReturn } from 'react-hook-form';
 
@@ -17,6 +23,7 @@ const TextInput = ({ label, register, type = 'text', error }: TextInputProps) =>
         {...register}
         className="w-full border border-gray-300 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
+      {/* Show validation error message below the input when present */}
       {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
   );
