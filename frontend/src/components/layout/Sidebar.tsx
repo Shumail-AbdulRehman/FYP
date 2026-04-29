@@ -69,7 +69,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
           </Button>
         </div>
 
-        <div className="mt-5 rounded-3xl border border-border/70 bg-white/80 p-4">
+        <div className="mt-5 rounded-3xl border border-border/70 bg-white/85 p-4 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.4)]">
           <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Workspace</p>
           <p className="mt-2 text-lg font-semibold text-foreground">{user?.role === "MANAGER" ? "Manager panel" : "Staff panel"}</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -86,7 +86,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
               onClick={onClose}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-150",
+                  "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-150 hover:translate-x-1",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-slate-600 hover:bg-white hover:text-foreground",
@@ -99,7 +99,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
           ))}
         </nav>
 
-        <div className="space-y-3 rounded-3xl border border-border/70 bg-white/80 p-4">
+        <div className="space-y-3 rounded-3xl border border-border/70 bg-white/85 p-4 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.35)]">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
               {initials}
