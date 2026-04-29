@@ -1,8 +1,15 @@
+/**
+ * @component StatCard
+ * @author Lira Zakhn (Frontend)
+ * @description Dashboard statistic card displaying a label, numeric value, icon, and optional hint.
+ *              Supports multiple color tones to visually differentiate metrics.
+ */
 import type { ElementType } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+// Tone map controls the icon badge background and text color per variant
 const TONES = {
   default: "bg-primary/12 text-primary",
   sky: "bg-sky-100 text-sky-700",
