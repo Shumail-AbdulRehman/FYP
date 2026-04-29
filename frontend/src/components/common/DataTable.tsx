@@ -1,3 +1,9 @@
+/**
+ * @component DataTable
+ * @author Lira Zakhn (Frontend)
+ * @description Generic, fully-typed data table component.
+ *              Renders dynamic columns and rows with optional row-click handler and empty state fallback.
+ */
 import type { ReactNode } from "react";
 import EmptyState from "./EmptyState";
 import { cn } from "@/lib/utils";
@@ -28,6 +34,7 @@ export default function DataTable<T>({
   onRowClick,
   className,
 }: DataTableProps<T>) {
+  // Render EmptyState when there is no data to display
   if (data.length === 0) {
     return <EmptyState icon={emptyIcon} message={emptyMessage} />;
   }
