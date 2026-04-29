@@ -1,3 +1,9 @@
+/**
+ * @component FormDialog
+ * @author Lira Zakhn (Frontend)
+ * @description Modal dialog wrapper for form interactions.
+ *              Wraps Shadcn Dialog to provide a consistent trigger + form + cancel/submit pattern.
+ */
 import * as React from "react";
 import {
   Dialog,
@@ -26,6 +32,7 @@ const FormDialog= ({ title, triggerText, onSubmit, children }: FormDialogProps) 
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
+        {/* Form is wrapped inside the dialog body; submit handled externally via onSubmit */}
         <form onSubmit={onSubmit} className="space-y-4">
           {children}
           <div className="flex justify-end space-x-2 mt-4">
