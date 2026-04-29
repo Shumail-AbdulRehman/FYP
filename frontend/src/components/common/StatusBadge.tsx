@@ -1,3 +1,9 @@
+/**
+ * @component StatusBadge
+ * @author Lira Zakhn (Frontend)
+ * @description Colored badge component that maps status string values to Tailwind color classes.
+ *              Handles unknown statuses gracefully with a neutral fallback style.
+ */
 import { Badge } from "@/components/ui/badge";
 
 const COLORS: Record<string, string> = {
@@ -30,6 +36,7 @@ interface StatusBadgeProps {
 export default function StatusBadge({ status, className = "" }: StatusBadgeProps) {
   const safeStatus = status ?? "UNKNOWN";
   const color = COLORS[safeStatus] ?? "bg-gray-100 text-gray-600";
+  // Replace underscores with spaces for human-readable label display
   const label = safeStatus.replace(/_/g, " ");
 
   return (
