@@ -1,3 +1,9 @@
+/**
+ * @component AuthShell
+ * @author Lira Zakhn (Frontend)
+ * @description Full-page authentication layout shell used by Login and Signup screens.
+ *              Provides a split-panel design with branding on the left and the auth form on the right.
+ */
 import type { ReactNode } from "react";
 
 import { ShieldCheck, Sparkles } from "lucide-react";
@@ -16,6 +22,7 @@ export default function AuthShell({
   footer,
 }: AuthShellProps) {
   return (
+    // Outer wrapper with a radial gradient background for a polished look
     <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.16),_transparent_34%),linear-gradient(180deg,#f8fafc_0%,#eef6f6_55%,#f9fbfb_100%)] px-4 py-8">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_20%_20%,rgba(15,118,110,0.14),transparent_35%),radial-gradient(circle_at_80%_0%,rgba(14,165,233,0.14),transparent_28%)]" />
       <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-center">
