@@ -1,6 +1,6 @@
 /**
  * @component FormDialog
- * @author Lira Zakhn (Frontend)
+ * @author ali
  * @description Modal dialog wrapper for form interactions.
  *              Wraps Shadcn Dialog to provide a consistent trigger + form + cancel/submit pattern.
  */

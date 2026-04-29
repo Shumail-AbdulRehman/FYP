@@ -1,6 +1,6 @@
 /**
  * @component ActionButton
- * @author Lira Zakhn (Frontend)
+ * @author ali
  * @description Reusable primary action button with optional leading icon.
  *              Used across the app for "Add New" style trigger actions.
  */

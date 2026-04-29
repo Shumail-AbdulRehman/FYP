@@ -1,6 +1,6 @@
 /**
  * @component SurfaceCard
- * @author Lira Zakhn (Frontend)
+ * @author ali
  * @description Styled card wrapper that optionally renders a header with title and description.
  *              Used as a layout surface throughout the dashboard for content sections.
  */

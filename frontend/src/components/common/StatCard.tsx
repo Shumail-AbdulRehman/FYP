@@ -1,6 +1,6 @@
 /**
  * @component StatCard
- * @author Lira Zakhn (Frontend)
+ * @author ali
  * @description Dashboard statistic card displaying a label, numeric value, icon, and optional hint.
  *              Supports multiple color tones to visually differentiate metrics.
  */

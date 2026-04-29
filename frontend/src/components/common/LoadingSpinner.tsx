@@ -1,6 +1,6 @@
 /**
  * @component LoadingSpinner
- * @author Lira Zakhn (Frontend)
+ * @author ali
  * @description Versatile animated spinner supporting three sizes and three display modes:
  *              inline, full-screen overlay, and partial overlay.
  *              Color and thickness are customizable via props.

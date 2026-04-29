@@ -1,6 +1,6 @@
 /**
  * @component PageHeader
- * @author Lira Zakhn (Frontend)
+ * @author ali
  * @description Top-of-page header with a title, optional subtitle, and optional action slot.
  *              Used consistently across all main views for visual uniformity.
  */

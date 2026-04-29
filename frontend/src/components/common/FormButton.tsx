@@ -1,6 +1,6 @@
 /**
  * @component FormButton
- * @author Lira Zakhn (Frontend)
+ * @author ali
  * @description Submit/action button for forms with built-in loading state.
  *              Automatically disables and shows a spinner while async operations run.
  */

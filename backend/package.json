@@ -9,7 +9,7 @@
     "seed:demo": "tsx prisma/seed-demo.ts"
   },
   "keywords": [],
-  "author": "",
+  "author": "ali",
   "license": "ISC",
   "type": "module",
   "devDependencies": {

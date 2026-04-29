@@ -1,6 +1,6 @@
 /**
  * @component AuthShell
- * @author Lira Zakhn (Frontend)
+ * @author ali
  * @description Full-page authentication layout shell used by Login and Signup screens.
  *              Provides a split-panel design with branding on the left and the auth form on the right.
  */

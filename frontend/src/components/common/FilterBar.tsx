@@ -1,6 +1,6 @@
 /**
  * @component FilterBar
- * @author Lira Zakhn (Frontend)
+ * @author ali
  * @description Responsive filter container used above data tables.
  *              Adapts from single column on mobile to multi-column grid on larger screens.
  */

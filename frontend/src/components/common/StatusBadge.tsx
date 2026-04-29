@@ -1,6 +1,6 @@
 /**
  * @component StatusBadge
- * @author Lira Zakhn (Frontend)
+ * @author ali
  * @description Colored badge component that maps status string values to Tailwind color classes.
  *              Handles unknown statuses gracefully with a neutral fallback style.
  */

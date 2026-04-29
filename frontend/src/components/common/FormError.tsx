@@ -1,7 +1,7 @@
 
 /**
  * @component FormError
- * @author Lira Zakhn (Frontend)
+ * @author ali
  * @description Inline form error message display component.
  *              Returns null when no message is present to keep the DOM clean.
  */

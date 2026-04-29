@@ -1,6 +1,6 @@
 /**
  * @component DataTable
- * @author Lira Zakhn (Frontend)
+ * @author ali
  * @description Generic, fully-typed data table component.
  *              Renders dynamic columns and rows with optional row-click handler and empty state fallback.
  */

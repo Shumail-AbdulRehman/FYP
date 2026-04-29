@@ -1,6 +1,6 @@
 /**
  * @component EmptyState
- * @author Lira Zakhn (Frontend)
+ * @author ali
  * @description Displays a centered placeholder when a list or table has no data.
  *              Accepts an optional icon, message, and action element for flexibility.
  */

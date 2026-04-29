@@ -1,6 +1,6 @@
 /**
  * @component TextInput
- * @author Lira Zakhn (Frontend)
+ * @author ali
  * @description Controlled text input integrated with React Hook Form.
  *              Renders a label, input field, and inline validation error message.
  */
