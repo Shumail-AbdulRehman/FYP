@@ -1,3 +1,9 @@
+/**
+ * @component FilterBar
+ * @author Lira Zakhn (Frontend)
+ * @description Responsive filter container used above data tables.
+ *              Adapts from single column on mobile to multi-column grid on larger screens.
+ */
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
@@ -15,6 +21,7 @@ export default function FilterBar({ children, className }: FilterBarProps) {
         className,
       )}
     >
+      // Children are slotted into a responsive CSS grid layout
       {children}
     </div>
   );
